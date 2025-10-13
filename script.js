@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderTaxBrackets();
     renderHelpThresholds();
     updateAwardDropdown();
+    updateHoursAwardDropdown();
 });
 
 // Tab functionality
@@ -57,7 +58,12 @@ function loadData() {
                 normalRate: 1.0,
                 overtimeRate: 1.5,
                 weekendRate: 2.0,
-                nightShiftRate: 1.25
+                nightShiftRate: 1.25,
+                maxDailyHours: 8,
+                minBreakHours: 10,
+                maxWeeklyHours: 38,
+                nightShiftStart: '22:00',
+                nightShiftEnd: '06:00'
             },
             {
                 id: 2,
@@ -65,7 +71,12 @@ function loadData() {
                 normalRate: 1.0,
                 overtimeRate: 1.5,
                 weekendRate: 1.75,
-                nightShiftRate: 1.15
+                nightShiftRate: 1.15,
+                maxDailyHours: 8,
+                minBreakHours: 10,
+                maxWeeklyHours: 38,
+                nightShiftStart: '22:00',
+                nightShiftEnd: '06:00'
             },
             {
                 id: 3,
@@ -73,7 +84,12 @@ function loadData() {
                 normalRate: 1.0,
                 overtimeRate: 1.5,
                 weekendRate: 2.0,
-                nightShiftRate: 1.3
+                nightShiftRate: 1.3,
+                maxDailyHours: 8,
+                minBreakHours: 10,
+                maxWeeklyHours: 38,
+                nightShiftStart: '22:00',
+                nightShiftEnd: '06:00'
             }
         ];
         saveAwards();
@@ -146,6 +162,11 @@ function addAward() {
     const overtimeRate = parseFloat(document.getElementById('overtimeRate').value);
     const weekendRate = parseFloat(document.getElementById('weekendRate').value);
     const nightShiftRate = parseFloat(document.getElementById('nightShiftRate').value);
+    const maxDailyHours = parseFloat(document.getElementById('maxDailyHours').value);
+    const minBreakHours = parseFloat(document.getElementById('minBreakHours').value);
+    const maxWeeklyHours = parseFloat(document.getElementById('maxWeeklyHours').value);
+    const nightShiftStart = document.getElementById('nightShiftStart').value;
+    const nightShiftEnd = document.getElementById('nightShiftEnd').value;
     
     if (!name) {
         alert('Please enter an award name');
@@ -158,13 +179,19 @@ function addAward() {
         normalRate: normalRate,
         overtimeRate: overtimeRate,
         weekendRate: weekendRate,
-        nightShiftRate: nightShiftRate
+        nightShiftRate: nightShiftRate,
+        maxDailyHours: maxDailyHours || 8,
+        minBreakHours: minBreakHours || 10,
+        maxWeeklyHours: maxWeeklyHours || 38,
+        nightShiftStart: nightShiftStart || '22:00',
+        nightShiftEnd: nightShiftEnd || '06:00'
     };
     
     awards.push(newAward);
     saveAwards();
     renderAwardsList();
     updateAwardDropdown();
+    updateHoursAwardDropdown();
     
     // Clear form
     document.getElementById('awardName').value = '';
@@ -172,6 +199,11 @@ function addAward() {
     document.getElementById('overtimeRate').value = '1.5';
     document.getElementById('weekendRate').value = '2.0';
     document.getElementById('nightShiftRate').value = '1.25';
+    document.getElementById('maxDailyHours').value = '8';
+    document.getElementById('minBreakHours').value = '10';
+    document.getElementById('maxWeeklyHours').value = '38';
+    document.getElementById('nightShiftStart').value = '22:00';
+    document.getElementById('nightShiftEnd').value = '06:00';
     
     alert('Award added successfully!');
 }
@@ -182,6 +214,7 @@ function deleteAward(id) {
         saveAwards();
         renderAwardsList();
         updateAwardDropdown();
+        updateHoursAwardDropdown();
     }
 }
 
@@ -408,4 +441,177 @@ function displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShift
 
 function formatCurrency(amount) {
     return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Update hours award dropdown
+function updateHoursAwardDropdown() {
+    const select = document.getElementById('hoursAward');
+    if (!select) return;
+    
+    const currentValue = select.value;
+    
+    select.innerHTML = '<option value="">-- Select Award --</option>' + 
+        awards.map(award => `<option value="${award.id}">${award.name}</option>`).join('');
+    
+    if (currentValue) {
+        select.value = currentValue;
+    }
+}
+
+// Hours calculation function
+function calculateHours() {
+    // Get input values
+    const awardId = parseInt(document.getElementById('hoursAward').value);
+    const startDate = document.getElementById('shiftStartDate').value;
+    const startTime = document.getElementById('shiftStartTime').value;
+    const endDate = document.getElementById('shiftEndDate').value;
+    const endTime = document.getElementById('shiftEndTime').value;
+    const isSleepover = document.getElementById('isSleepover').value === 'true';
+    
+    // Validation
+    if (!awardId) {
+        alert('Please select an award');
+        return;
+    }
+    
+    if (!startDate || !startTime) {
+        alert('Please enter shift start date and time');
+        return;
+    }
+    
+    if (!endDate || !endTime) {
+        alert('Please enter shift end date and time');
+        return;
+    }
+    
+    // Find award
+    const award = awards.find(a => a.id === awardId);
+    if (!award) {
+        alert('Selected award not found');
+        return;
+    }
+    
+    // Parse dates
+    const start = new Date(`${startDate}T${startTime}`);
+    const end = new Date(`${endDate}T${endTime}`);
+    
+    if (end <= start) {
+        alert('End time must be after start time');
+        return;
+    }
+    
+    // Calculate total hours
+    const totalMilliseconds = end - start;
+    const totalHours = totalMilliseconds / (1000 * 60 * 60);
+    
+    // Adjust for sleepover (typically 8 hours deducted for sleep)
+    const adjustedTotalHours = isSleepover ? Math.max(0, totalHours - 8) : totalHours;
+    
+    // Calculate hours breakdown
+    let normalHours = 0;
+    let overtimeHours = 0;
+    let weekendHours = 0;
+    let nightShiftHours = 0;
+    const warnings = [];
+    
+    // Check if shift exceeds daily maximum
+    const maxDailyHours = award.maxDailyHours || 8;
+    if (adjustedTotalHours > maxDailyHours) {
+        overtimeHours = adjustedTotalHours - maxDailyHours;
+        normalHours = maxDailyHours;
+        warnings.push({
+            title: 'Daily Overtime Detected',
+            message: `Shift duration (${adjustedTotalHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+        });
+    } else {
+        normalHours = adjustedTotalHours;
+    }
+    
+    // Calculate weekend hours
+    const startDay = start.getDay(); // 0 = Sunday, 6 = Saturday
+    const endDay = end.getDay();
+    
+    if (startDay === 0 || startDay === 6 || endDay === 0 || endDay === 6) {
+        // For simplicity, if any part of the shift is on weekend, count all hours as weekend
+        weekendHours = adjustedTotalHours;
+        normalHours = 0;
+        overtimeHours = 0;
+    }
+    
+    // Calculate night shift hours
+    const nightStart = award.nightShiftStart || '22:00';
+    const nightEnd = award.nightShiftEnd || '06:00';
+    nightShiftHours = calculateNightShiftHours(start, end, nightStart, nightEnd);
+    
+    // Display results
+    displayHoursResults(adjustedTotalHours, normalHours, overtimeHours, weekendHours, nightShiftHours, warnings);
+}
+
+// Helper function to calculate night shift hours
+function calculateNightShiftHours(start, end, nightStart, nightEnd) {
+    // Parse night shift times
+    const [nightStartHour, nightStartMin] = nightStart.split(':').map(Number);
+    const [nightEndHour, nightEndMin] = nightEnd.split(':').map(Number);
+    
+    let nightHours = 0;
+    let current = new Date(start);
+    
+    // Iterate through each hour of the shift
+    while (current < end) {
+        const hour = current.getHours();
+        const minute = current.getMinutes();
+        
+        // Check if current time is within night shift hours
+        // Night shift can wrap around midnight (e.g., 22:00 to 06:00)
+        let isNightShift = false;
+        if (nightStartHour > nightEndHour) {
+            // Wraps around midnight
+            isNightShift = (hour > nightStartHour || hour < nightEndHour || 
+                          (hour === nightStartHour && minute >= nightStartMin) ||
+                          (hour === nightEndHour && minute < nightEndMin));
+        } else {
+            // Doesn't wrap around midnight
+            isNightShift = ((hour > nightStartHour || (hour === nightStartHour && minute >= nightStartMin)) &&
+                          (hour < nightEndHour || (hour === nightEndHour && minute < nightEndMin)));
+        }
+        
+        if (isNightShift) {
+            // Calculate the fraction of hour that's in night shift
+            const nextHour = new Date(current.getTime() + 60 * 60 * 1000);
+            const increment = Math.min(nextHour, end) - current;
+            nightHours += increment / (1000 * 60 * 60);
+        }
+        
+        // Move to next hour
+        current = new Date(current.getTime() + 60 * 60 * 1000);
+    }
+    
+    return nightHours;
+}
+
+// Display hours calculation results
+function displayHoursResults(total, normal, overtime, weekend, nightShift, warnings) {
+    document.getElementById('totalHours').textContent = total.toFixed(2) + ' hours';
+    document.getElementById('calculatedNormalHours').textContent = normal.toFixed(2) + ' hours';
+    document.getElementById('calculatedOvertimeHours').textContent = overtime.toFixed(2) + ' hours';
+    document.getElementById('calculatedWeekendHours').textContent = weekend.toFixed(2) + ' hours';
+    document.getElementById('calculatedNightShiftHours').textContent = nightShift.toFixed(2) + ' hours';
+    
+    // Display warnings
+    const warningsContainer = document.getElementById('overtimeWarnings');
+    if (warnings.length > 0) {
+        warningsContainer.innerHTML = warnings.map(warning => `
+            <div class="warning-item">
+                <strong>${warning.title}</strong>
+                ${warning.message}
+            </div>
+        `).join('');
+    } else {
+        warningsContainer.innerHTML = '';
+    }
+    
+    document.getElementById('hoursResults').style.display = 'block';
+    
+    // Scroll to results
+    document.getElementById('hoursResults').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

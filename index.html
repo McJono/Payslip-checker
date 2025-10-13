@@ -15,6 +15,7 @@
 
         <nav class="tabs">
             <button class="tab-button active" data-tab="calculator">Pay Calculator</button>
+            <button class="tab-button" data-tab="hours">Hours Calculator</button>
             <button class="tab-button" data-tab="admin">Admin Settings</button>
         </nav>
 
@@ -114,6 +115,75 @@
             </div>
         </div>
 
+        <!-- Hours Calculator Tab -->
+        <div id="hours" class="tab-content">
+            <div class="card">
+                <h2>Calculate Hours Worked</h2>
+                
+                <div class="form-group">
+                    <label for="hoursAward">Select Award:</label>
+                    <select id="hoursAward" class="form-control">
+                        <option value="">-- Select Award --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="shiftStartDate">Shift Start Date:</label>
+                    <input type="date" id="shiftStartDate" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="shiftStartTime">Shift Start Time:</label>
+                    <input type="time" id="shiftStartTime" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="isSleepover">Is this a sleepover shift?</label>
+                    <select id="isSleepover" class="form-control">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="shiftEndDate">Shift End Date:</label>
+                    <input type="date" id="shiftEndDate" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="shiftEndTime">Shift End Time:</label>
+                    <input type="time" id="shiftEndTime" class="form-control">
+                </div>
+
+                <button onclick="calculateHours()" class="btn btn-primary">Calculate Hours</button>
+
+                <div id="hoursResults" class="results" style="display: none;">
+                    <h3>Hours Breakdown</h3>
+                    <div class="result-item">
+                        <span>Total Hours Worked:</span>
+                        <span id="totalHours">0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Normal Hours:</span>
+                        <span id="calculatedNormalHours">0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Overtime Hours:</span>
+                        <span id="calculatedOvertimeHours">0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Weekend Hours:</span>
+                        <span id="calculatedWeekendHours">0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Night Shift Hours:</span>
+                        <span id="calculatedNightShiftHours">0.00</span>
+                    </div>
+                    <div id="overtimeWarnings" class="overtime-warnings"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Admin Settings Tab -->
         <div id="admin" class="tab-content">
             <div class="card">
@@ -142,6 +212,32 @@
                         <div>
                             <label for="nightShiftRate">Night Shift Rate (x):</label>
                             <input type="number" id="nightShiftRate" class="form-control" step="0.01" min="0" value="1.25">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Overtime Rules:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="maxDailyHours">Max Daily Hours (before overtime):</label>
+                            <input type="number" id="maxDailyHours" class="form-control" step="0.25" min="0" value="8" placeholder="8">
+                        </div>
+                        <div>
+                            <label for="minBreakHours">Min Break Between Shifts (hours):</label>
+                            <input type="number" id="minBreakHours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
+                        </div>
+                        <div>
+                            <label for="maxWeeklyHours">Max Weekly Hours (before overtime):</label>
+                            <input type="number" id="maxWeeklyHours" class="form-control" step="0.25" min="0" value="38" placeholder="38">
+                        </div>
+                        <div>
+                            <label for="nightShiftStart">Night Shift Start Time:</label>
+                            <input type="time" id="nightShiftStart" class="form-control" value="22:00">
+                        </div>
+                        <div>
+                            <label for="nightShiftEnd">Night Shift End Time:</label>
+                            <input type="time" id="nightShiftEnd" class="form-control" value="06:00">
                         </div>
                     </div>
                 </div>
