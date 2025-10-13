@@ -151,11 +151,15 @@ function loadData() {
                 ]
             };
         }
-        saveTaxBrackets();
     }
     
     // Set current tax brackets
     taxBrackets = taxBracketsByYear[currentTaxYear] || [];
+    
+    // Save if we loaded defaults
+    if (!savedTaxBrackets) {
+        saveTaxBrackets();
+    }
     
     // Load HELP debt thresholds by year
     const savedHelpThresholds = localStorage.getItem('helpThresholdsByYear');
@@ -193,11 +197,15 @@ function loadData() {
                 ]
             };
         }
-        saveHelpThresholds();
     }
     
     // Set current help thresholds
     helpThresholds = helpThresholdsByYear[currentHelpYear] || [];
+    
+    // Save if we loaded defaults
+    if (!savedHelpThresholds) {
+        saveHelpThresholds();
+    }
 }
 
 // Save functions
