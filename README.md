@@ -101,6 +101,13 @@ The main application can load default configurations from JSON files if they exi
 4. Clear your browser's localStorage (or use a new browser/incognito mode)
 5. Reload the page - your custom defaults will be loaded
 
+**Example files are provided:**
+- `default-awards.json.example`
+- `default-tax-rates.json.example`
+- `default-help-rates.json.example`
+
+You can rename these files (remove the `.example` extension) to use them as starting templates.
+
 **Note:** If the JSON files are not present or fail to load, the application will automatically fall back to the built-in hardcoded defaults.
 
 ## Default Awards
