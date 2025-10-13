@@ -37,6 +37,14 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="payPeriod">Pay Period:</label>
+                    <select id="payPeriod" class="form-control">
+                        <option value="weekly">Weekly</option>
+                        <option value="fortnightly">Fortnightly</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Hours Worked:</label>
                     <div class="hours-grid">
                         <div class="hour-input">
@@ -74,7 +82,7 @@
                 <button onclick="calculatePay()" class="btn btn-primary">Calculate Pay</button>
 
                 <div id="results" class="results" style="display: none;">
-                    <h3>Pay Breakdown</h3>
+                    <h3>Pay Breakdown (<span id="payPeriodLabel">Weekly</span>)</h3>
                     <div class="result-item">
                         <span>Gross Pay:</span>
                         <span id="grossPay">$0.00</span>
@@ -127,32 +135,42 @@
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label for="shiftStartDate">Shift Start Date:</label>
-                    <input type="date" id="shiftStartDate" class="form-control">
+                <div id="shiftsContainer">
+                    <div class="shift-entry" data-shift-index="0">
+                        <h3>Shift 1</h3>
+                        
+                        <div class="form-group">
+                            <label for="shiftStartDate-0">Shift Start Date:</label>
+                            <input type="date" id="shiftStartDate-0" class="form-control shift-start-date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="shiftStartTime-0">Shift Start Time:</label>
+                            <input type="time" id="shiftStartTime-0" class="form-control shift-start-time">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="isSleepover-0">Is this a sleepover shift?</label>
+                            <select id="isSleepover-0" class="form-control shift-sleepover">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="shiftEndDate-0">Shift End Date:</label>
+                            <input type="date" id="shiftEndDate-0" class="form-control shift-end-date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="shiftEndTime-0">Shift End Time:</label>
+                            <input type="time" id="shiftEndTime-0" class="form-control shift-end-time">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="shiftStartTime">Shift Start Time:</label>
-                    <input type="time" id="shiftStartTime" class="form-control">
-                </div>
-
-                <div class="form-group">
-                    <label for="isSleepover">Is this a sleepover shift?</label>
-                    <select id="isSleepover" class="form-control">
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="shiftEndDate">Shift End Date:</label>
-                    <input type="date" id="shiftEndDate" class="form-control">
-                </div>
-
-                <div class="form-group">
-                    <label for="shiftEndTime">Shift End Time:</label>
-                    <input type="time" id="shiftEndTime" class="form-control">
+                    <button onclick="addShift()" class="btn btn-secondary">Add Another Shift</button>
                 </div>
 
                 <button onclick="calculateHours()" class="btn btn-primary">Calculate Hours</button>

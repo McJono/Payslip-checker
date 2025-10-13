@@ -350,6 +350,7 @@ function calculatePay() {
     // Get input values
     const awardId = parseInt(document.getElementById('award').value);
     const baseRate = parseFloat(document.getElementById('baseRate').value);
+    const payPeriod = document.getElementById('payPeriod').value;
     const normalHours = parseFloat(document.getElementById('normalHours').value) || 0;
     const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
     const weekendHours = parseFloat(document.getElementById('weekendHours').value) || 0;
@@ -384,20 +385,21 @@ function calculatePay() {
     // Calculate gross pay
     const grossPay = normalPay + overtimePay + weekendPay + nightShiftPay + allowances;
     
-    // Estimate annual income (multiply weekly pay by 52)
-    const estimatedAnnualIncome = grossPay * 52;
+    // Estimate annual income based on pay period
+    const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
+    const estimatedAnnualIncome = grossPay * periodsPerYear;
     
     // Calculate tax
-    const tax = calculateTax(estimatedAnnualIncome) / 52; // Weekly tax
+    const tax = calculateTax(estimatedAnnualIncome) / periodsPerYear;
     
     // Calculate HELP debt repayment
-    const helpRepayment = hasHelpDebt ? calculateHelpDebt(estimatedAnnualIncome) / 52 : 0;
+    const helpRepayment = hasHelpDebt ? calculateHelpDebt(estimatedAnnualIncome) / periodsPerYear : 0;
     
     // Calculate net pay
     const netPay = grossPay - tax - helpRepayment;
     
     // Display results
-    displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShiftPay, allowances, tax, helpRepayment, netPay);
+    displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod);
 }
 
 function calculateTax(annualIncome) {
@@ -422,7 +424,7 @@ function calculateHelpDebt(annualIncome) {
     return 0;
 }
 
-function displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShiftPay, allowances, tax, helpRepayment, netPay) {
+function displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod) {
     document.getElementById('grossPay').textContent = formatCurrency(grossPay);
     document.getElementById('normalPay').textContent = formatCurrency(normalPay);
     document.getElementById('overtimePay').textContent = formatCurrency(overtimePay);
@@ -432,6 +434,10 @@ function displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShift
     document.getElementById('tax').textContent = formatCurrency(tax);
     document.getElementById('helpRepayment').textContent = formatCurrency(helpRepayment);
     document.getElementById('netPay').textContent = formatCurrency(netPay);
+    
+    // Update pay period label
+    const periodLabel = payPeriod === 'fortnightly' ? 'Fortnightly' : 'Weekly';
+    document.getElementById('payPeriodLabel').textContent = periodLabel;
     
     document.getElementById('results').style.display = 'block';
     
@@ -458,29 +464,80 @@ function updateHoursAwardDropdown() {
     }
 }
 
+// Shift management
+let shiftCount = 1;
+
+function addShift() {
+    const container = document.getElementById('shiftsContainer');
+    const shiftIndex = shiftCount;
+    
+    const shiftDiv = document.createElement('div');
+    shiftDiv.className = 'shift-entry';
+    shiftDiv.setAttribute('data-shift-index', shiftIndex);
+    
+    shiftDiv.innerHTML = `
+        <h3>Shift ${shiftIndex + 1}</h3>
+        <button onclick="removeShift(${shiftIndex})" class="btn btn-danger shift-remove-btn">Remove</button>
+        
+        <div class="form-group">
+            <label for="shiftStartDate-${shiftIndex}">Shift Start Date:</label>
+            <input type="date" id="shiftStartDate-${shiftIndex}" class="form-control shift-start-date">
+        </div>
+
+        <div class="form-group">
+            <label for="shiftStartTime-${shiftIndex}">Shift Start Time:</label>
+            <input type="time" id="shiftStartTime-${shiftIndex}" class="form-control shift-start-time">
+        </div>
+
+        <div class="form-group">
+            <label for="isSleepover-${shiftIndex}">Is this a sleepover shift?</label>
+            <select id="isSleepover-${shiftIndex}" class="form-control shift-sleepover">
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="shiftEndDate-${shiftIndex}">Shift End Date:</label>
+            <input type="date" id="shiftEndDate-${shiftIndex}" class="form-control shift-end-date">
+        </div>
+
+        <div class="form-group">
+            <label for="shiftEndTime-${shiftIndex}">Shift End Time:</label>
+            <input type="time" id="shiftEndTime-${shiftIndex}" class="form-control shift-end-time">
+        </div>
+    `;
+    
+    container.appendChild(shiftDiv);
+    shiftCount++;
+}
+
+function removeShift(shiftIndex) {
+    const shiftDiv = document.querySelector(`[data-shift-index="${shiftIndex}"]`);
+    if (shiftDiv) {
+        shiftDiv.remove();
+        renumberShifts();
+    }
+}
+
+function renumberShifts() {
+    const shifts = document.querySelectorAll('.shift-entry');
+    shifts.forEach((shift, index) => {
+        const h3 = shift.querySelector('h3');
+        if (h3) {
+            h3.textContent = `Shift ${index + 1}`;
+        }
+    });
+}
+
 // Hours calculation function
 function calculateHours() {
     // Get input values
     const awardId = parseInt(document.getElementById('hoursAward').value);
-    const startDate = document.getElementById('shiftStartDate').value;
-    const startTime = document.getElementById('shiftStartTime').value;
-    const endDate = document.getElementById('shiftEndDate').value;
-    const endTime = document.getElementById('shiftEndTime').value;
-    const isSleepover = document.getElementById('isSleepover').value === 'true';
     
     // Validation
     if (!awardId) {
         alert('Please select an award');
-        return;
-    }
-    
-    if (!startDate || !startTime) {
-        alert('Please enter shift start date and time');
-        return;
-    }
-    
-    if (!endDate || !endTime) {
-        alert('Please enter shift end date and time');
         return;
     }
     
@@ -491,60 +548,104 @@ function calculateHours() {
         return;
     }
     
-    // Parse dates
-    const start = new Date(`${startDate}T${startTime}`);
-    const end = new Date(`${endDate}T${endTime}`);
+    // Get all shift entries
+    const shiftEntries = document.querySelectorAll('.shift-entry');
     
-    if (end <= start) {
-        alert('End time must be after start time');
+    if (shiftEntries.length === 0) {
+        alert('Please add at least one shift');
         return;
     }
     
-    // Calculate total hours
-    const totalMilliseconds = end - start;
-    const totalHours = totalMilliseconds / (1000 * 60 * 60);
+    // Calculate totals across all shifts
+    let totalHours = 0;
+    let totalNormalHours = 0;
+    let totalOvertimeHours = 0;
+    let totalWeekendHours = 0;
+    let totalNightShiftHours = 0;
+    const allWarnings = [];
     
-    // Adjust for sleepover (typically 8 hours deducted for sleep)
-    const adjustedTotalHours = isSleepover ? Math.max(0, totalHours - 8) : totalHours;
-    
-    // Calculate hours breakdown
-    let normalHours = 0;
-    let overtimeHours = 0;
-    let weekendHours = 0;
-    let nightShiftHours = 0;
-    const warnings = [];
-    
-    // Check if shift exceeds daily maximum
-    const maxDailyHours = award.maxDailyHours || 8;
-    if (adjustedTotalHours > maxDailyHours) {
-        overtimeHours = adjustedTotalHours - maxDailyHours;
-        normalHours = maxDailyHours;
-        warnings.push({
-            title: 'Daily Overtime Detected',
-            message: `Shift duration (${adjustedTotalHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
-        });
-    } else {
-        normalHours = adjustedTotalHours;
+    // Process each shift
+    for (let i = 0; i < shiftEntries.length; i++) {
+        const shiftIndex = shiftEntries[i].getAttribute('data-shift-index');
+        
+        const startDate = document.getElementById(`shiftStartDate-${shiftIndex}`).value;
+        const startTime = document.getElementById(`shiftStartTime-${shiftIndex}`).value;
+        const endDate = document.getElementById(`shiftEndDate-${shiftIndex}`).value;
+        const endTime = document.getElementById(`shiftEndTime-${shiftIndex}`).value;
+        const isSleepover = document.getElementById(`isSleepover-${shiftIndex}`).value === 'true';
+        
+        // Validation for this shift
+        if (!startDate || !startTime) {
+            alert(`Please enter shift start date and time for Shift ${i + 1}`);
+            return;
+        }
+        
+        if (!endDate || !endTime) {
+            alert(`Please enter shift end date and time for Shift ${i + 1}`);
+            return;
+        }
+        
+        // Parse dates
+        const start = new Date(`${startDate}T${startTime}`);
+        const end = new Date(`${endDate}T${endTime}`);
+        
+        if (end <= start) {
+            alert(`End time must be after start time for Shift ${i + 1}`);
+            return;
+        }
+        
+        // Calculate hours for this shift
+        const totalMilliseconds = end - start;
+        const shiftHours = totalMilliseconds / (1000 * 60 * 60);
+        
+        // Adjust for sleepover
+        const adjustedShiftHours = isSleepover ? Math.max(0, shiftHours - 8) : shiftHours;
+        totalHours += adjustedShiftHours;
+        
+        // Calculate hours breakdown for this shift
+        let normalHours = 0;
+        let overtimeHours = 0;
+        let weekendHours = 0;
+        let nightShiftHours = 0;
+        
+        // Check if shift exceeds daily maximum
+        const maxDailyHours = award.maxDailyHours || 8;
+        if (adjustedShiftHours > maxDailyHours) {
+            overtimeHours = adjustedShiftHours - maxDailyHours;
+            normalHours = maxDailyHours;
+            allWarnings.push({
+                title: `Daily Overtime Detected - Shift ${i + 1}`,
+                message: `Shift duration (${adjustedShiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+            });
+        } else {
+            normalHours = adjustedShiftHours;
+        }
+        
+        // Calculate weekend hours
+        const startDay = start.getDay(); // 0 = Sunday, 6 = Saturday
+        const endDay = end.getDay();
+        
+        if (startDay === 0 || startDay === 6 || endDay === 0 || endDay === 6) {
+            // For simplicity, if any part of the shift is on weekend, count all hours as weekend
+            weekendHours = adjustedShiftHours;
+            normalHours = 0;
+            overtimeHours = 0;
+        }
+        
+        // Calculate night shift hours
+        const nightStart = award.nightShiftStart || '22:00';
+        const nightEnd = award.nightShiftEnd || '06:00';
+        nightShiftHours = calculateNightShiftHours(start, end, nightStart, nightEnd);
+        
+        // Add to totals
+        totalNormalHours += normalHours;
+        totalOvertimeHours += overtimeHours;
+        totalWeekendHours += weekendHours;
+        totalNightShiftHours += nightShiftHours;
     }
-    
-    // Calculate weekend hours
-    const startDay = start.getDay(); // 0 = Sunday, 6 = Saturday
-    const endDay = end.getDay();
-    
-    if (startDay === 0 || startDay === 6 || endDay === 0 || endDay === 6) {
-        // For simplicity, if any part of the shift is on weekend, count all hours as weekend
-        weekendHours = adjustedTotalHours;
-        normalHours = 0;
-        overtimeHours = 0;
-    }
-    
-    // Calculate night shift hours
-    const nightStart = award.nightShiftStart || '22:00';
-    const nightEnd = award.nightShiftEnd || '06:00';
-    nightShiftHours = calculateNightShiftHours(start, end, nightStart, nightEnd);
     
     // Display results
-    displayHoursResults(adjustedTotalHours, normalHours, overtimeHours, weekendHours, nightShiftHours, warnings);
+    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalWeekendHours, totalNightShiftHours, allWarnings);
 }
 
 // Helper function to calculate night shift hours
