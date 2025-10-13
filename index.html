@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payslip Checker - Calculate Your Pay</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Payslip Checker</h1>
+            <p>Calculate your pay with tax and HELP debt deductions</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="calculator">Pay Calculator</button>
+            <button class="tab-button" data-tab="admin">Admin Settings</button>
+        </nav>
+
+        <!-- Pay Calculator Tab -->
+        <div id="calculator" class="tab-content active">
+            <div class="card">
+                <h2>Calculate Your Pay</h2>
+                
+                <div class="form-group">
+                    <label for="award">Select Award:</label>
+                    <select id="award" class="form-control">
+                        <option value="">-- Select Award --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="baseRate">Base Pay Rate ($/hour):</label>
+                    <input type="number" id="baseRate" class="form-control" step="0.01" min="0" placeholder="25.00">
+                </div>
+
+                <div class="form-group">
+                    <label>Hours Worked:</label>
+                    <div class="hours-grid">
+                        <div class="hour-input">
+                            <label for="normalHours">Normal Hours:</label>
+                            <input type="number" id="normalHours" class="form-control" step="0.25" min="0" value="0" placeholder="38">
+                        </div>
+                        <div class="hour-input">
+                            <label for="overtimeHours">Overtime Hours:</label>
+                            <input type="number" id="overtimeHours" class="form-control" step="0.25" min="0" value="0" placeholder="5">
+                        </div>
+                        <div class="hour-input">
+                            <label for="weekendHours">Weekend Hours:</label>
+                            <input type="number" id="weekendHours" class="form-control" step="0.25" min="0" value="0" placeholder="8">
+                        </div>
+                        <div class="hour-input">
+                            <label for="nightShiftHours">Night Shift Hours:</label>
+                            <input type="number" id="nightShiftHours" class="form-control" step="0.25" min="0" value="0" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="allowances">Allowances ($):</label>
+                    <input type="number" id="allowances" class="form-control" step="0.01" min="0" value="0" placeholder="50.00">
+                </div>
+
+                <div class="form-group">
+                    <label for="helpDebt">Do you have a HELP Debt?</label>
+                    <select id="helpDebt" class="form-control">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+
+                <button onclick="calculatePay()" class="btn btn-primary">Calculate Pay</button>
+
+                <div id="results" class="results" style="display: none;">
+                    <h3>Pay Breakdown</h3>
+                    <div class="result-item">
+                        <span>Gross Pay:</span>
+                        <span id="grossPay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Normal Hours Pay:</span>
+                        <span id="normalPay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Overtime Pay:</span>
+                        <span id="overtimePay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Weekend Pay:</span>
+                        <span id="weekendPay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Night Shift Pay:</span>
+                        <span id="nightShiftPay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Allowances:</span>
+                        <span id="allowancesPay">$0.00</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Tax Withheld:</span>
+                        <span id="tax">$0.00</span>
+                    </div>
+                    <div class="result-item">
+                        <span>HELP Debt Repayment:</span>
+                        <span id="helpRepayment">$0.00</span>
+                    </div>
+                    <div class="result-item net-pay">
+                        <span><strong>Net Pay:</strong></span>
+                        <span id="netPay"><strong>$0.00</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Settings Tab -->
+        <div id="admin" class="tab-content">
+            <div class="card">
+                <h2>Award Management</h2>
+                
+                <div class="form-group">
+                    <label for="awardName">Award Name:</label>
+                    <input type="text" id="awardName" class="form-control" placeholder="e.g., Retail Award">
+                </div>
+
+                <div class="form-group">
+                    <label>Rate Multipliers:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="normalRate">Normal Rate:</label>
+                            <input type="number" id="normalRate" class="form-control" step="0.01" min="0" value="1.0">
+                        </div>
+                        <div>
+                            <label for="overtimeRate">Overtime Rate (x):</label>
+                            <input type="number" id="overtimeRate" class="form-control" step="0.01" min="0" value="1.5">
+                        </div>
+                        <div>
+                            <label for="weekendRate">Weekend Rate (x):</label>
+                            <input type="number" id="weekendRate" class="form-control" step="0.01" min="0" value="2.0">
+                        </div>
+                        <div>
+                            <label for="nightShiftRate">Night Shift Rate (x):</label>
+                            <input type="number" id="nightShiftRate" class="form-control" step="0.01" min="0" value="1.25">
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="addAward()" class="btn btn-primary">Add Award</button>
+
+                <div class="awards-list">
+                    <h3>Existing Awards</h3>
+                    <div id="awardsList"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Tax Rate Configuration</h2>
+                <p class="info-text">Configure Australian tax brackets (2024-2025 financial year defaults)</p>
+                
+                <div id="taxBrackets"></div>
+                
+                <button onclick="addTaxBracket()" class="btn btn-secondary">Add Tax Bracket</button>
+                <button onclick="saveTaxRates()" class="btn btn-primary">Save Tax Rates</button>
+            </div>
+
+            <div class="card">
+                <h2>HELP Debt Configuration</h2>
+                <p class="info-text">Configure HELP debt repayment thresholds (2024-2025 financial year defaults)</p>
+                
+                <div id="helpThresholds"></div>
+                
+                <button onclick="addHelpThreshold()" class="btn btn-secondary">Add HELP Threshold</button>
+                <button onclick="saveHelpRates()" class="btn btn-primary">Save HELP Rates</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>Payslip Checker - Australian Tax and HELP Debt Calculator</p>
+            <p class="disclaimer">This calculator provides estimates only. Please consult with a tax professional for accurate calculations.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
