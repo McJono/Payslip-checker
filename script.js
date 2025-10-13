@@ -1,13 +1,20 @@
 // Default data storage
 let awards = [];
-let taxBrackets = [];
-let helpThresholds = [];
+let taxBracketsByYear = {};
+let helpThresholdsByYear = {};
+let currentTaxYear = '2024-2025';
+let currentHelpYear = '2024-2025';
+let taxBrackets = []; // For backward compatibility
+let helpThresholds = []; // For backward compatibility
+let customAllowanceCount = 0;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     loadData();
     renderAwardsList();
+    renderTaxYearDropdown();
+    renderHelpYearDropdown();
     renderTaxBrackets();
     renderHelpThresholds();
     updateAwardDropdown();
@@ -50,7 +57,7 @@ function loadData() {
     if (savedAwards) {
         awards = JSON.parse(savedAwards);
     } else {
-        // Default awards
+        // Default awards with new fields
         awards = [
             {
                 id: 1,
@@ -63,7 +70,16 @@ function loadData() {
                 minBreakHours: 10,
                 maxWeeklyHours: 38,
                 nightShiftStart: '22:00',
-                nightShiftEnd: '06:00'
+                nightShiftEnd: '06:00',
+                extendedShiftHours: 10,
+                hasSleepover: false,
+                sleeperRate: 0,
+                mealAllowance1: 0,
+                mealAllowance1Hours: 5,
+                mealAllowance2: 0,
+                mealAllowance2Hours: 10,
+                firstAidAllowance: 0,
+                customAllowances: []
             },
             {
                 id: 2,
@@ -76,7 +92,16 @@ function loadData() {
                 minBreakHours: 10,
                 maxWeeklyHours: 38,
                 nightShiftStart: '22:00',
-                nightShiftEnd: '06:00'
+                nightShiftEnd: '06:00',
+                extendedShiftHours: 10,
+                hasSleepover: false,
+                sleeperRate: 0,
+                mealAllowance1: 0,
+                mealAllowance1Hours: 5,
+                mealAllowance2: 0,
+                mealAllowance2Hours: 10,
+                firstAidAllowance: 0,
+                customAllowances: []
             },
             {
                 id: 3,
@@ -89,57 +114,76 @@ function loadData() {
                 minBreakHours: 10,
                 maxWeeklyHours: 38,
                 nightShiftStart: '22:00',
-                nightShiftEnd: '06:00'
+                nightShiftEnd: '06:00',
+                extendedShiftHours: 10,
+                hasSleepover: false,
+                sleeperRate: 0,
+                mealAllowance1: 0,
+                mealAllowance1Hours: 5,
+                mealAllowance2: 0,
+                mealAllowance2Hours: 10,
+                firstAidAllowance: 0,
+                customAllowances: []
             }
         ];
         saveAwards();
     }
     
-    // Load tax brackets
-    const savedTaxBrackets = localStorage.getItem('taxBrackets');
+    // Load tax brackets by year
+    const savedTaxBrackets = localStorage.getItem('taxBracketsByYear');
     if (savedTaxBrackets) {
-        taxBrackets = JSON.parse(savedTaxBrackets);
+        taxBracketsByYear = JSON.parse(savedTaxBrackets);
     } else {
         // Default Australian tax brackets for 2024-2025
-        taxBrackets = [
-            { min: 0, max: 18200, rate: 0 },
-            { min: 18201, max: 45000, rate: 0.19 },
-            { min: 45001, max: 120000, rate: 0.325 },
-            { min: 120001, max: 180000, rate: 0.37 },
-            { min: 180001, max: Infinity, rate: 0.45 }
-        ];
+        taxBracketsByYear = {
+            '2024-2025': [
+                { min: 0, max: 18200, rate: 0 },
+                { min: 18201, max: 45000, rate: 0.19 },
+                { min: 45001, max: 120000, rate: 0.325 },
+                { min: 120001, max: 180000, rate: 0.37 },
+                { min: 180001, max: Infinity, rate: 0.45 }
+            ]
+        };
         saveTaxBrackets();
     }
     
-    // Load HELP debt thresholds
-    const savedHelpThresholds = localStorage.getItem('helpThresholds');
+    // Set current tax brackets
+    taxBrackets = taxBracketsByYear[currentTaxYear] || [];
+    
+    // Load HELP debt thresholds by year
+    const savedHelpThresholds = localStorage.getItem('helpThresholdsByYear');
     if (savedHelpThresholds) {
-        helpThresholds = JSON.parse(savedHelpThresholds);
+        helpThresholdsByYear = JSON.parse(savedHelpThresholds);
     } else {
         // Default Australian HELP debt repayment rates for 2024-2025
-        helpThresholds = [
-            { min: 0, max: 51550, rate: 0 },
-            { min: 51551, max: 59518, rate: 0.01 },
-            { min: 59519, max: 63089, rate: 0.02 },
-            { min: 63090, max: 66875, rate: 0.025 },
-            { min: 66876, max: 70888, rate: 0.03 },
-            { min: 70889, max: 75140, rate: 0.035 },
-            { min: 75141, max: 79649, rate: 0.04 },
-            { min: 79650, max: 84429, rate: 0.045 },
-            { min: 84430, max: 89494, rate: 0.05 },
-            { min: 89495, max: 94865, rate: 0.055 },
-            { min: 94866, max: 100557, rate: 0.06 },
-            { min: 100558, max: 106590, rate: 0.065 },
-            { min: 106591, max: 112985, rate: 0.07 },
-            { min: 112986, max: 119764, rate: 0.075 },
-            { min: 119765, max: 126950, rate: 0.08 },
-            { min: 126951, max: 134568, rate: 0.085 },
-            { min: 134569, max: 142642, rate: 0.09 },
-            { min: 142643, max: 151200, rate: 0.095 },
-            { min: 151201, max: Infinity, rate: 0.10 }
-        ];
+        helpThresholdsByYear = {
+            '2024-2025': [
+                { min: 0, max: 51550, rate: 0 },
+                { min: 51551, max: 59518, rate: 0.01 },
+                { min: 59519, max: 63089, rate: 0.02 },
+                { min: 63090, max: 66875, rate: 0.025 },
+                { min: 66876, max: 70888, rate: 0.03 },
+                { min: 70889, max: 75140, rate: 0.035 },
+                { min: 75141, max: 79649, rate: 0.04 },
+                { min: 79650, max: 84429, rate: 0.045 },
+                { min: 84430, max: 89494, rate: 0.05 },
+                { min: 89495, max: 94865, rate: 0.055 },
+                { min: 94866, max: 100557, rate: 0.06 },
+                { min: 100558, max: 106590, rate: 0.065 },
+                { min: 106591, max: 112985, rate: 0.07 },
+                { min: 112986, max: 119764, rate: 0.075 },
+                { min: 119765, max: 126950, rate: 0.08 },
+                { min: 126951, max: 134568, rate: 0.085 },
+                { min: 134569, max: 142642, rate: 0.09 },
+                { min: 142643, max: 151200, rate: 0.095 },
+                { min: 151201, max: Infinity, rate: 0.10 }
+            ]
+        };
         saveHelpThresholds();
     }
+    
+    // Set current help thresholds
+    helpThresholds = helpThresholdsByYear[currentHelpYear] || [];
 }
 
 // Save functions
@@ -148,11 +192,13 @@ function saveAwards() {
 }
 
 function saveTaxBrackets() {
-    localStorage.setItem('taxBrackets', JSON.stringify(taxBrackets));
+    taxBracketsByYear[currentTaxYear] = taxBrackets;
+    localStorage.setItem('taxBracketsByYear', JSON.stringify(taxBracketsByYear));
 }
 
 function saveHelpThresholds() {
-    localStorage.setItem('helpThresholds', JSON.stringify(helpThresholds));
+    helpThresholdsByYear[currentHelpYear] = helpThresholds;
+    localStorage.setItem('helpThresholdsByYear', JSON.stringify(helpThresholdsByYear));
 }
 
 // Award Management
@@ -167,11 +213,33 @@ function addAward() {
     const maxWeeklyHours = parseFloat(document.getElementById('maxWeeklyHours').value);
     const nightShiftStart = document.getElementById('nightShiftStart').value;
     const nightShiftEnd = document.getElementById('nightShiftEnd').value;
+    const extendedShiftHours = parseFloat(document.getElementById('extendedShiftHours').value);
+    const hasSleepover = document.getElementById('hasSleepover').value === 'true';
+    const sleeperRate = parseFloat(document.getElementById('sleeperRate').value);
+    const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
+    const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
+    const mealAllowance2 = parseFloat(document.getElementById('mealAllowance2').value);
+    const mealAllowance2Hours = parseFloat(document.getElementById('mealAllowance2Hours').value);
+    const firstAidAllowance = parseFloat(document.getElementById('firstAidAllowance').value);
     
     if (!name) {
         alert('Please enter an award name');
         return;
     }
+    
+    // Collect custom allowances
+    const customAllowances = [];
+    const customAllowanceInputs = document.querySelectorAll('.custom-allowance-item');
+    customAllowanceInputs.forEach(item => {
+        const nameInput = item.querySelector('.custom-allowance-name');
+        const amountInput = item.querySelector('.custom-allowance-amount');
+        if (nameInput && amountInput && nameInput.value.trim()) {
+            customAllowances.push({
+                name: nameInput.value.trim(),
+                amount: parseFloat(amountInput.value) || 0
+            });
+        }
+    });
     
     const newAward = {
         id: Date.now(),
@@ -184,7 +252,16 @@ function addAward() {
         minBreakHours: minBreakHours || 10,
         maxWeeklyHours: maxWeeklyHours || 38,
         nightShiftStart: nightShiftStart || '22:00',
-        nightShiftEnd: nightShiftEnd || '06:00'
+        nightShiftEnd: nightShiftEnd || '06:00',
+        extendedShiftHours: extendedShiftHours || 10,
+        hasSleepover: hasSleepover,
+        sleeperRate: sleeperRate || 0,
+        mealAllowance1: mealAllowance1 || 0,
+        mealAllowance1Hours: mealAllowance1Hours || 5,
+        mealAllowance2: mealAllowance2 || 0,
+        mealAllowance2Hours: mealAllowance2Hours || 10,
+        firstAidAllowance: firstAidAllowance || 0,
+        customAllowances: customAllowances
     };
     
     awards.push(newAward);
@@ -204,8 +281,76 @@ function addAward() {
     document.getElementById('maxWeeklyHours').value = '38';
     document.getElementById('nightShiftStart').value = '22:00';
     document.getElementById('nightShiftEnd').value = '06:00';
+    document.getElementById('extendedShiftHours').value = '10';
+    document.getElementById('hasSleepover').value = 'false';
+    document.getElementById('sleeperRate').value = '0';
+    document.getElementById('mealAllowance1').value = '0';
+    document.getElementById('mealAllowance1Hours').value = '5';
+    document.getElementById('mealAllowance2').value = '0';
+    document.getElementById('mealAllowance2Hours').value = '10';
+    document.getElementById('firstAidAllowance').value = '0';
+    document.getElementById('customAllowancesContainer').innerHTML = '';
+    customAllowanceCount = 0;
     
     alert('Award added successfully!');
+}
+
+function addCustomAllowanceField() {
+    const container = document.getElementById('customAllowancesContainer');
+    const index = customAllowanceCount++;
+    
+    const div = document.createElement('div');
+    div.className = 'custom-allowance-item';
+    div.style.display = 'grid';
+    div.style.gridTemplateColumns = '1fr 1fr auto';
+    div.style.gap = '10px';
+    div.style.marginBottom = '10px';
+    div.innerHTML = `
+        <input type="text" class="form-control custom-allowance-name" placeholder="Allowance name">
+        <input type="number" class="form-control custom-allowance-amount" step="0.01" min="0" placeholder="Amount ($)">
+        <button onclick="this.parentElement.remove()" class="btn btn-danger">Remove</button>
+    `;
+    container.appendChild(div);
+}
+
+function downloadAwards() {
+    const dataStr = JSON.stringify(awards, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'payslip-awards.json';
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+}
+
+function uploadAwards(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const uploadedAwards = JSON.parse(e.target.result);
+            if (!Array.isArray(uploadedAwards)) {
+                alert('Invalid awards file format');
+                return;
+            }
+            
+            awards = uploadedAwards;
+            saveAwards();
+            renderAwardsList();
+            updateAwardDropdown();
+            updateHoursAwardDropdown();
+            alert('Awards imported successfully!');
+        } catch (error) {
+            alert('Error parsing awards file: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    event.target.value = '';
 }
 
 function deleteAward(id) {
@@ -297,6 +442,42 @@ function saveTaxRates() {
     alert('Tax rates saved successfully!');
 }
 
+// Tax Year Management
+function renderTaxYearDropdown() {
+    const select = document.getElementById('taxYear');
+    if (!select) return;
+    
+    const years = Object.keys(taxBracketsByYear).sort().reverse();
+    select.innerHTML = years.map(year => 
+        `<option value="${year}" ${year === currentTaxYear ? 'selected' : ''}>${year}</option>`
+    ).join('');
+}
+
+function switchTaxYear(year) {
+    currentTaxYear = year;
+    taxBrackets = taxBracketsByYear[year] || [];
+    renderTaxBrackets();
+}
+
+function addNewTaxYear() {
+    const year = prompt('Enter new financial year (e.g., 2025-2026):');
+    if (!year) return;
+    
+    if (taxBracketsByYear[year]) {
+        alert('This year already exists');
+        return;
+    }
+    
+    // Create empty tax brackets for new year
+    taxBracketsByYear[year] = [];
+    currentTaxYear = year;
+    taxBrackets = [];
+    saveTaxBrackets();
+    renderTaxYearDropdown();
+    renderTaxBrackets();
+    alert('New tax year added successfully!');
+}
+
 // HELP Debt Management
 function addHelpThreshold() {
     helpThresholds.push({ min: 0, max: 0, rate: 0 });
@@ -343,6 +524,42 @@ function saveHelpRates() {
     helpThresholds.sort((a, b) => a.min - b.min);
     saveHelpThresholds();
     alert('HELP debt rates saved successfully!');
+}
+
+// HELP Year Management
+function renderHelpYearDropdown() {
+    const select = document.getElementById('helpYear');
+    if (!select) return;
+    
+    const years = Object.keys(helpThresholdsByYear).sort().reverse();
+    select.innerHTML = years.map(year => 
+        `<option value="${year}" ${year === currentHelpYear ? 'selected' : ''}>${year}</option>`
+    ).join('');
+}
+
+function switchHelpYear(year) {
+    currentHelpYear = year;
+    helpThresholds = helpThresholdsByYear[year] || [];
+    renderHelpThresholds();
+}
+
+function addNewHelpYear() {
+    const year = prompt('Enter new financial year (e.g., 2025-2026):');
+    if (!year) return;
+    
+    if (helpThresholdsByYear[year]) {
+        alert('This year already exists');
+        return;
+    }
+    
+    // Create empty help thresholds for new year
+    helpThresholdsByYear[year] = [];
+    currentHelpYear = year;
+    helpThresholds = [];
+    saveHelpThresholds();
+    renderHelpYearDropdown();
+    renderHelpThresholds();
+    alert('New HELP year added successfully!');
 }
 
 // Pay Calculation

@@ -257,7 +257,60 @@
                             <label for="nightShiftEnd">Night Shift End Time:</label>
                             <input type="time" id="nightShiftEnd" class="form-control" value="06:00">
                         </div>
+                        <div>
+                            <label for="extendedShiftHours">Extended Shift Hours (before overtime):</label>
+                            <input type="number" id="extendedShiftHours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
+                        </div>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Award Features:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="hasSleepover">Sleepovers Included:</label>
+                            <select id="hasSleepover" class="form-control">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sleeperRate">Sleepover Rate ($/shift):</label>
+                            <input type="number" id="sleeperRate" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Allowances:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="mealAllowance1">Meal Allowance 1 ($/occurrence):</label>
+                            <input type="number" id="mealAllowance1" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label for="mealAllowance1Hours">After how many hours:</label>
+                            <input type="number" id="mealAllowance1Hours" class="form-control" step="0.25" min="0" value="5" placeholder="5">
+                        </div>
+                        <div>
+                            <label for="mealAllowance2">Meal Allowance 2 ($/occurrence):</label>
+                            <input type="number" id="mealAllowance2" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label for="mealAllowance2Hours">After how many hours:</label>
+                            <input type="number" id="mealAllowance2Hours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
+                        </div>
+                        <div>
+                            <label for="firstAidAllowance">First Aid Allowance ($/week):</label>
+                            <input type="number" id="firstAidAllowance" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Custom Allowances:</label>
+                    <div id="customAllowancesContainer"></div>
+                    <button onclick="addCustomAllowanceField()" class="btn btn-secondary">Add Custom Allowance</button>
                 </div>
 
                 <button onclick="addAward()" class="btn btn-primary">Add Award</button>
@@ -266,11 +319,25 @@
                     <h3>Existing Awards</h3>
                     <div id="awardsList"></div>
                 </div>
+
+                <div class="form-group">
+                    <h3>Import/Export Awards</h3>
+                    <button onclick="downloadAwards()" class="btn btn-primary">Download Awards (JSON)</button>
+                    <button onclick="document.getElementById('uploadAwardsInput').click()" class="btn btn-secondary">Upload Awards (JSON)</button>
+                    <input type="file" id="uploadAwardsInput" accept=".json" style="display: none;" onchange="uploadAwards(event)">
+                </div>
             </div>
 
             <div class="card">
                 <h2>Tax Rate Configuration</h2>
                 <p class="info-text">Configure Australian tax brackets (2024-2025 financial year defaults)</p>
+                
+                <div class="form-group">
+                    <label for="taxYear">Financial Year:</label>
+                    <select id="taxYear" class="form-control" onchange="switchTaxYear(this.value)">
+                    </select>
+                    <button onclick="addNewTaxYear()" class="btn btn-secondary" style="margin-top: 10px;">Add New Year</button>
+                </div>
                 
                 <div id="taxBrackets"></div>
                 
@@ -281,6 +348,13 @@
             <div class="card">
                 <h2>HELP Debt Configuration</h2>
                 <p class="info-text">Configure HELP debt repayment thresholds (2024-2025 financial year defaults)</p>
+                
+                <div class="form-group">
+                    <label for="helpYear">Financial Year:</label>
+                    <select id="helpYear" class="form-control" onchange="switchHelpYear(this.value)">
+                    </select>
+                    <button onclick="addNewHelpYear()" class="btn btn-secondary" style="margin-top: 10px;">Add New Year</button>
+                </div>
                 
                 <div id="helpThresholds"></div>
                 
