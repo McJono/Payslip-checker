@@ -9,9 +9,9 @@ let helpThresholds = []; // For backward compatibility
 let customAllowanceCount = 0;
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     initializeTabs();
-    loadData();
+    await loadData();
     renderAwardsList();
     renderTaxYearDropdown();
     renderHelpYearDropdown();
@@ -50,82 +50,101 @@ function switchTab(tabName) {
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 }
 
+// Helper function to load JSON file with fallback
+async function loadJsonFile(filename) {
+    try {
+        const response = await fetch(filename);
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        // File doesn't exist or can't be loaded, return null
+    }
+    return null;
+}
+
 // Load data from localStorage or use defaults
-function loadData() {
+async function loadData() {
     // Load awards
     const savedAwards = localStorage.getItem('awards');
     if (savedAwards) {
         awards = JSON.parse(savedAwards);
     } else {
-        // Default awards with new fields
-        awards = [
-            {
-                id: 1,
-                name: 'General Retail Industry Award',
-                normalRate: 1.0,
-                overtimeRate: 1.5,
-                weekendRate: 2.0,
-                nightShiftRate: 1.25,
-                maxDailyHours: 8,
-                minBreakHours: 10,
-                maxWeeklyHours: 38,
-                nightShiftStart: '22:00',
-                nightShiftEnd: '06:00',
-                extendedShiftHours: 10,
-                hasSleepover: false,
-                sleeperRate: 0,
-                mealAllowance1: 0,
-                mealAllowance1Hours: 5,
-                mealAllowance2: 0,
-                mealAllowance2Hours: 10,
-                firstAidAllowance: 0,
-                customAllowances: []
-            },
-            {
-                id: 2,
-                name: 'Hospitality Industry Award',
-                normalRate: 1.0,
-                overtimeRate: 1.5,
-                weekendRate: 1.75,
-                nightShiftRate: 1.15,
-                maxDailyHours: 8,
-                minBreakHours: 10,
-                maxWeeklyHours: 38,
-                nightShiftStart: '22:00',
-                nightShiftEnd: '06:00',
-                extendedShiftHours: 10,
-                hasSleepover: false,
-                sleeperRate: 0,
-                mealAllowance1: 0,
-                mealAllowance1Hours: 5,
-                mealAllowance2: 0,
-                mealAllowance2Hours: 10,
-                firstAidAllowance: 0,
-                customAllowances: []
-            },
-            {
-                id: 3,
-                name: 'Manufacturing Award',
-                normalRate: 1.0,
-                overtimeRate: 1.5,
-                weekendRate: 2.0,
-                nightShiftRate: 1.3,
-                maxDailyHours: 8,
-                minBreakHours: 10,
-                maxWeeklyHours: 38,
-                nightShiftStart: '22:00',
-                nightShiftEnd: '06:00',
-                extendedShiftHours: 10,
-                hasSleepover: false,
-                sleeperRate: 0,
-                mealAllowance1: 0,
-                mealAllowance1Hours: 5,
-                mealAllowance2: 0,
-                mealAllowance2Hours: 10,
-                firstAidAllowance: 0,
-                customAllowances: []
-            }
-        ];
+        // Try to load from default JSON file
+        const jsonAwards = await loadJsonFile('default-awards.json');
+        if (jsonAwards) {
+            awards = jsonAwards;
+        } else {
+            // Default awards with new fields
+            awards = [
+                {
+                    id: 1,
+                    name: 'General Retail Industry Award',
+                    normalRate: 1.0,
+                    overtimeRate: 1.5,
+                    weekendRate: 2.0,
+                    nightShiftRate: 1.25,
+                    maxDailyHours: 8,
+                    minBreakHours: 10,
+                    maxWeeklyHours: 38,
+                    nightShiftStart: '22:00',
+                    nightShiftEnd: '06:00',
+                    extendedShiftHours: 10,
+                    hasSleepover: false,
+                    sleeperRate: 0,
+                    mealAllowance1: 0,
+                    mealAllowance1Hours: 5,
+                    mealAllowance2: 0,
+                    mealAllowance2Hours: 10,
+                    firstAidAllowance: 0,
+                    customAllowances: []
+                },
+                {
+                    id: 2,
+                    name: 'Hospitality Industry Award',
+                    normalRate: 1.0,
+                    overtimeRate: 1.5,
+                    weekendRate: 1.75,
+                    nightShiftRate: 1.15,
+                    maxDailyHours: 8,
+                    minBreakHours: 10,
+                    maxWeeklyHours: 38,
+                    nightShiftStart: '22:00',
+                    nightShiftEnd: '06:00',
+                    extendedShiftHours: 10,
+                    hasSleepover: false,
+                    sleeperRate: 0,
+                    mealAllowance1: 0,
+                    mealAllowance1Hours: 5,
+                    mealAllowance2: 0,
+                    mealAllowance2Hours: 10,
+                    firstAidAllowance: 0,
+                    customAllowances: []
+                },
+                {
+                    id: 3,
+                    name: 'Manufacturing Award',
+                    normalRate: 1.0,
+                    overtimeRate: 1.5,
+                    weekendRate: 2.0,
+                    nightShiftRate: 1.3,
+                    maxDailyHours: 8,
+                    minBreakHours: 10,
+                    maxWeeklyHours: 38,
+                    nightShiftStart: '22:00',
+                    nightShiftEnd: '06:00',
+                    extendedShiftHours: 10,
+                    hasSleepover: false,
+                    sleeperRate: 0,
+                    mealAllowance1: 0,
+                    mealAllowance1Hours: 5,
+                    mealAllowance2: 0,
+                    mealAllowance2Hours: 10,
+                    firstAidAllowance: 0,
+                    customAllowances: []
+                }
+            ];
+        }
         saveAwards();
     }
     
@@ -140,16 +159,22 @@ function loadData() {
             const parsed = JSON.parse(oldTaxBrackets);
             taxBracketsByYear = { '2024-2025': parsed };
         } else {
-            // Default Australian tax brackets for 2024-2025
-            taxBracketsByYear = {
-                '2024-2025': [
-                    { min: 0, max: 18200, rate: 0 },
-                    { min: 18201, max: 45000, rate: 0.19 },
-                    { min: 45001, max: 120000, rate: 0.325 },
-                    { min: 120001, max: 180000, rate: 0.37 },
-                    { min: 180001, max: Infinity, rate: 0.45 }
-                ]
-            };
+            // Try to load from default JSON file
+            const jsonTaxBrackets = await loadJsonFile('default-tax-rates.json');
+            if (jsonTaxBrackets) {
+                taxBracketsByYear = jsonTaxBrackets;
+            } else {
+                // Default Australian tax brackets for 2024-2025
+                taxBracketsByYear = {
+                    '2024-2025': [
+                        { min: 0, max: 18200, rate: 0 },
+                        { min: 18201, max: 45000, rate: 0.19 },
+                        { min: 45001, max: 120000, rate: 0.325 },
+                        { min: 120001, max: 180000, rate: 0.37 },
+                        { min: 180001, max: Infinity, rate: 0.45 }
+                    ]
+                };
+            }
         }
     }
     
@@ -172,30 +197,36 @@ function loadData() {
             const parsed = JSON.parse(oldHelpThresholds);
             helpThresholdsByYear = { '2024-2025': parsed };
         } else {
-            // Default Australian HELP debt repayment rates for 2024-2025
-            helpThresholdsByYear = {
-                '2024-2025': [
-                    { min: 0, max: 51550, rate: 0 },
-                    { min: 51551, max: 59518, rate: 0.01 },
-                    { min: 59519, max: 63089, rate: 0.02 },
-                    { min: 63090, max: 66875, rate: 0.025 },
-                    { min: 66876, max: 70888, rate: 0.03 },
-                    { min: 70889, max: 75140, rate: 0.035 },
-                    { min: 75141, max: 79649, rate: 0.04 },
-                    { min: 79650, max: 84429, rate: 0.045 },
-                    { min: 84430, max: 89494, rate: 0.05 },
-                    { min: 89495, max: 94865, rate: 0.055 },
-                    { min: 94866, max: 100557, rate: 0.06 },
-                    { min: 100558, max: 106590, rate: 0.065 },
-                    { min: 106591, max: 112985, rate: 0.07 },
-                    { min: 112986, max: 119764, rate: 0.075 },
-                    { min: 119765, max: 126950, rate: 0.08 },
-                    { min: 126951, max: 134568, rate: 0.085 },
-                    { min: 134569, max: 142642, rate: 0.09 },
-                    { min: 142643, max: 151200, rate: 0.095 },
-                    { min: 151201, max: Infinity, rate: 0.10 }
-                ]
-            };
+            // Try to load from default JSON file
+            const jsonHelpThresholds = await loadJsonFile('default-help-rates.json');
+            if (jsonHelpThresholds) {
+                helpThresholdsByYear = jsonHelpThresholds;
+            } else {
+                // Default Australian HELP debt repayment rates for 2024-2025
+                helpThresholdsByYear = {
+                    '2024-2025': [
+                        { min: 0, max: 51550, rate: 0 },
+                        { min: 51551, max: 59518, rate: 0.01 },
+                        { min: 59519, max: 63089, rate: 0.02 },
+                        { min: 63090, max: 66875, rate: 0.025 },
+                        { min: 66876, max: 70888, rate: 0.03 },
+                        { min: 70889, max: 75140, rate: 0.035 },
+                        { min: 75141, max: 79649, rate: 0.04 },
+                        { min: 79650, max: 84429, rate: 0.045 },
+                        { min: 84430, max: 89494, rate: 0.05 },
+                        { min: 89495, max: 94865, rate: 0.055 },
+                        { min: 94866, max: 100557, rate: 0.06 },
+                        { min: 100558, max: 106590, rate: 0.065 },
+                        { min: 106591, max: 112985, rate: 0.07 },
+                        { min: 112986, max: 119764, rate: 0.075 },
+                        { min: 119765, max: 126950, rate: 0.08 },
+                        { min: 126951, max: 134568, rate: 0.085 },
+                        { min: 134569, max: 142642, rate: 0.09 },
+                        { min: 142643, max: 151200, rate: 0.095 },
+                        { min: 151201, max: Infinity, rate: 0.10 }
+                    ]
+                };
+            }
         }
     }
     

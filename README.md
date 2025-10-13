@@ -22,6 +22,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 - **Admin Interface**: Configure awards, tax rates, and HELP debt thresholds
 - **Import/Export**: Download and upload award configurations as JSON files
 - **Defaults Editor**: Separate tool (defaults-editor.html) for designing JSON configuration files
+- **Custom Default Configurations**: Load default settings from JSON files (optional)
 - **Persistent Storage**: Settings saved in browser local storage
 
 ## Usage
@@ -71,15 +72,43 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 2. **Awards Editor**:
    - Load current awards from main app or create new ones
    - Edit all award properties including allowances
-   - Download as JSON file
+   - Download as JSON file (`default-awards.json`)
 3. **Tax Rates Editor**:
    - Set financial year
    - Configure tax brackets
-   - Download as JSON file
+   - Download as JSON file (`default-tax-rates.json`)
 4. **HELP Debt Editor**:
    - Set financial year
    - Configure repayment thresholds
-   - Download as JSON file
+   - Download as JSON file (`default-help-rates.json`)
+
+### Using Default Configuration Files
+
+The main application can load default configurations from JSON files if they exist in the same directory as `index.html`. This allows you to customize the default values without modifying the code.
+
+**Loading Priority:**
+1. **LocalStorage** (highest priority) - Settings saved by users take precedence
+2. **JSON Files** (medium priority) - If localStorage is empty, loads from:
+   - `default-awards.json` for award configurations
+   - `default-tax-rates.json` for tax brackets
+   - `default-help-rates.json` for HELP debt thresholds
+3. **Hardcoded Defaults** (lowest priority) - Built-in fallback values
+
+**To use custom defaults:**
+1. Use the Defaults Editor to create your configuration
+2. Download the JSON files
+3. Place them in the same directory as `index.html`
+4. Clear your browser's localStorage (or use a new browser/incognito mode)
+5. Reload the page - your custom defaults will be loaded
+
+**Example files are provided:**
+- `default-awards.json.example`
+- `default-tax-rates.json.example`
+- `default-help-rates.json.example`
+
+You can rename these files (remove the `.example` extension) to use them as starting templates.
+
+**Note:** If the JSON files are not present or fail to load, the application will automatically fall back to the built-in hardcoded defaults.
 
 ## Default Awards
 

@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "name": "Example Award",
+    "normalRate": 1.0,
+    "overtimeRate": 1.5,
+    "weekendRate": 2.0,
+    "nightShiftRate": 1.25,
+    "maxDailyHours": 8,
+    "minBreakHours": 10,
+    "maxWeeklyHours": 38,
+    "nightShiftStart": "22:00",
+    "nightShiftEnd": "06:00",
+    "extendedShiftHours": 10,
+    "hasSleepover": false,
+    "sleeperRate": 0,
+    "mealAllowance1": 0,
+    "mealAllowance1Hours": 5,
+    "mealAllowance2": 0,
+    "mealAllowance2Hours": 10,
+    "firstAidAllowance": 0,
+    "customAllowances": []
+  }
+]
