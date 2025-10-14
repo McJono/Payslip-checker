@@ -407,9 +407,16 @@ footer p {
         padding: 12px 10px;
     }
     
+    /* Mobile-friendly tooltips */
     .tooltip-label .tooltip-text {
         width: 200px;
         margin-left: -100px;
+    }
+
+    /* Show tooltip on tap/touch for mobile */
+    .tooltip-label.active .tooltip-text {
+        visibility: visible;
+        opacity: 1;
     }
 
     .btn {

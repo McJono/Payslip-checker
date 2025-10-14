@@ -10,7 +10,36 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     renderEditorAwards();
     updateAwardsJson();
+    initializeMobileTooltips();
 });
+
+// Initialize mobile-friendly tooltips
+function initializeMobileTooltips() {
+    // Add touch support for tooltips on mobile
+    document.addEventListener('click', function(e) {
+        const tooltipLabel = e.target.closest('.tooltip-label');
+        
+        if (tooltipLabel) {
+            // Toggle active class on the clicked tooltip
+            const wasActive = tooltipLabel.classList.contains('active');
+            
+            // Remove active from all tooltips
+            document.querySelectorAll('.tooltip-label.active').forEach(label => {
+                label.classList.remove('active');
+            });
+            
+            // Add active to clicked one if it wasn't already active
+            if (!wasActive) {
+                tooltipLabel.classList.add('active');
+            }
+        } else {
+            // Clicked outside, remove all active tooltips
+            document.querySelectorAll('.tooltip-label.active').forEach(label => {
+                label.classList.remove('active');
+            });
+        }
+    });
+}
 
 // Tab functionality
 function initializeTabs() {
