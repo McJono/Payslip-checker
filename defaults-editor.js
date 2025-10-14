@@ -15,28 +15,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize mobile-friendly tooltips
 function initializeMobileTooltips() {
+    let activeTooltip = null;
+    
     // Add touch support for tooltips on mobile
     document.addEventListener('click', function(e) {
         const tooltipLabel = e.target.closest('.tooltip-label');
         
         if (tooltipLabel) {
             // Toggle active class on the clicked tooltip
-            const wasActive = tooltipLabel.classList.contains('active');
-            
-            // Remove active from all tooltips
-            document.querySelectorAll('.tooltip-label.active').forEach(label => {
-                label.classList.remove('active');
-            });
-            
-            // Add active to clicked one if it wasn't already active
-            if (!wasActive) {
+            if (activeTooltip === tooltipLabel) {
+                // Clicking the same tooltip again - close it
+                tooltipLabel.classList.remove('active');
+                activeTooltip = null;
+            } else {
+                // Close previous tooltip if any
+                if (activeTooltip) {
+                    activeTooltip.classList.remove('active');
+                }
+                // Open new tooltip
                 tooltipLabel.classList.add('active');
+                activeTooltip = tooltipLabel;
             }
-        } else {
-            // Clicked outside, remove all active tooltips
-            document.querySelectorAll('.tooltip-label.active').forEach(label => {
-                label.classList.remove('active');
-            });
+        } else if (activeTooltip) {
+            // Clicked outside, close active tooltip
+            activeTooltip.classList.remove('active');
+            activeTooltip = null;
         }
     });
 }
