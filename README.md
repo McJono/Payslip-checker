@@ -9,7 +9,8 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 - **Rate Types**: Support for:
   - Normal hours
   - Overtime (configurable multiplier)
-  - Weekend rates (configurable multiplier)
+  - Saturday rates (configurable multiplier)
+  - Sunday rates (configurable multiplier)
   - Night shift rates (configurable multiplier)
 - **Award Allowances**: Configure awards with:
   - Meal allowances (up to 2) triggered after specified hours
@@ -17,6 +18,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
   - First aid allowances
   - Custom allowances (unlimited)
   - Extended shift hours before overtime kicks in
+- **Smart Allowance Questions**: Automatically displays relevant allowance questions based on selected award
 - **Australian Tax Calculation**: Uses configurable tax brackets with multi-year support
 - **HELP Debt Repayment**: Calculates HELP debt repayments with multi-year thresholds
 - **Admin Interface**: Configure awards, tax rates, and HELP debt thresholds
@@ -24,6 +26,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 - **Defaults Editor**: Separate tool (defaults-editor.html) for designing JSON configuration files
 - **Custom Default Configurations**: Load default settings from JSON files (optional)
 - **Persistent Storage**: Settings saved in browser local storage
+- **Clear Data Options**: Individual clear buttons for each data category
 
 ## Usage
 
@@ -35,52 +38,141 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 4. Enter hours worked:
    - Normal hours
    - Overtime hours
-   - Weekend hours
+   - Saturday hours (separate from Sunday)
+   - Sunday hours (separate from Saturday)
    - Night shift hours
-5. Enter any allowances
-6. Select if you have a HELP debt
-7. Click "Calculate Pay" to see your breakdown
+5. Answer allowance questions that appear based on your selected award:
+   - Meal allowances (if applicable to your award)
+   - First aid certificate (if applicable to your award)
+   - Custom allowances (if applicable to your award)
+6. Enter any additional manual allowances not covered by the questions
+7. Select if you have a HELP debt
+8. Click "Calculate Pay" to see your breakdown
 
 ### For Administrators
 
+#### Award Management
+
 1. Click the "Admin Settings" tab
-2. **Award Management**:
-   - Enter award name
-   - Set rate multipliers for different work types
-   - Configure overtime rules (max daily/weekly hours, extended shift hours)
-   - Set sleepover support and rates
-   - Configure meal allowances (up to 2, with hours triggers)
-   - Add first aid allowance
-   - Add custom allowances as needed
+2. **Creating an Award**:
+   - Enter award name (e.g., "Retail Award")
+   - **Rate Multipliers**:
+     - Normal Rate: Usually 1.0 (base multiplier)
+     - Overtime Rate: Typically 1.5 (time-and-a-half)
+     - Saturday Rate: Weekend penalty rate for Saturdays (e.g., 1.5)
+     - Sunday Rate: Weekend penalty rate for Sundays (e.g., 2.0)
+     - Night Shift Rate: Penalty for night work (e.g., 1.25)
+   - **Overtime Rules**:
+     - Max Daily Hours: Hours before daily overtime kicks in (default: 8)
+     - Min Break Between Shifts: Minimum rest period in hours (default: 10)
+     - Max Weekly Hours: Hours before weekly overtime kicks in (default: 38)
+     - Night Shift Start Time: When night shift rates begin (default: 22:00)
+     - Night Shift End Time: When night shift rates end (default: 06:00)
+     - Extended Shift Hours: Hours before extended shift overtime applies (default: 10)
+   - **Award Features** (Check boxes to enable and configure):
+     - ☑ **Sleepovers Included**: Enable if award includes sleepover shifts
+       - Sleepover Rate: Fixed amount per sleepover shift
+     - ☑ **Meal Allowances**: Enable if award includes meal allowances
+       - Meal Allowance 1: Amount paid after specified hours
+       - After how many hours: Trigger point for first meal allowance
+       - Meal Allowance 2: Amount for second meal allowance
+       - After how many hours: Trigger point for second meal allowance
+     - ☑ **First Aid Allowance**: Enable if award includes first aid pay
+       - First Aid Allowance: Weekly amount for holding first aid certificate
+     - ☑ **Custom Allowances**: Enable to add unlimited custom allowances
+       - Add custom allowance entries with name and amount
    - Click "Add Award" to save
-   - Delete awards as needed
-3. **Import/Export Awards**:
-   - Download your awards as JSON files
-   - Upload previously saved award configurations
-4. **Tax Rate Configuration**:
-   - Select financial year from dropdown or add new year
-   - Add/edit tax brackets with min/max income and tax rate
-   - Click "Save Tax Rates" when done
-5. **HELP Debt Configuration**:
-   - Select financial year from dropdown or add new year
-   - Add/edit income thresholds with repayment rates
-   - Click "Save HELP Rates" when done
+   
+3. **Managing Existing Awards**:
+   - View all configured awards in the "Existing Awards" section
+   - Each award shows: Name and rate multipliers
+   - Click "Delete" to remove an award
+   - **Clear Awards Data** button: Removes all awards and reloads defaults
+
+4. **Import/Export Configuration**:
+   - **Complete Configuration**:
+     - Download: Saves awards, tax rates, HELP rates, calculator data, shifts, and settings
+     - Upload: Restores complete configuration from JSON file
+   - **Awards Only** (Legacy):
+     - Download: Saves only awards configuration
+     - Upload: Restores only awards from JSON file
+
+#### Tax Rate Configuration
+
+1. Navigate to "Tax Rate Configuration" section
+2. **Financial Year Selection**:
+   - Select year from dropdown (e.g., "2024-2025")
+   - Click "Add New Year" to create configuration for new financial year
+3. **Managing Tax Brackets**:
+   - Each bracket requires:
+     - Min Income ($): Starting threshold for this tax rate
+     - Max Income ($): Ending threshold (leave empty for no upper limit)
+     - Tax Rate (%): Percentage of income taxed in this bracket
+   - Click "Add Tax Bracket" to add new bracket
+   - Click "Delete" on a bracket to remove it
+   - Click "Save Tax Rates" to save all changes
+4. **Clear Tax Data** button: Removes all tax configuration and reloads defaults
+
+**Example Tax Brackets for 2024-2025**:
+- $0 - $18,200: 0%
+- $18,201 - $45,000: 19%
+- $45,001 - $120,000: 32.5%
+- $120,001 - $180,000: 37%
+- $180,001+: 45%
+
+#### HELP Debt Configuration
+
+1. Navigate to "HELP Debt Configuration" section
+2. **Financial Year Selection**:
+   - Select year from dropdown
+   - Click "Add New Year" to create new year configuration
+3. **Managing HELP Thresholds**:
+   - Each threshold requires:
+     - Min Income ($): Starting threshold for this repayment rate
+     - Max Income ($): Ending threshold (leave empty for no upper limit)
+     - Repayment Rate (%): Percentage of income for HELP repayment
+   - Click "Add HELP Threshold" to add new threshold
+   - Click "Delete" on a threshold to remove it
+   - Click "Save HELP Rates" to save all changes
+4. **Clear HELP Data** button: Removes all HELP configuration and reloads defaults
+
+**Example HELP Thresholds for 2024-2025**:
+- Below $51,550: 0%
+- $51,550 - $59,518: 1%
+- $59,519 - $63,089: 2%
+- (continues with gradual increases)
+- Above $151,200: 10%
 
 ### Using the Defaults Editor
 
+The Defaults Editor (`defaults-editor.html`) is a separate tool for creating JSON configuration files that can be used as default settings.
+
 1. Open `defaults-editor.html` in your web browser
-2. **Awards Editor**:
-   - Load current awards from main app or create new ones
-   - Edit all award properties including allowances
-   - Download as JSON file (`default-awards.json`)
-3. **Tax Rates Editor**:
-   - Set financial year
-   - Configure tax brackets
-   - Download as JSON file (`default-tax-rates.json`)
-4. **HELP Debt Editor**:
-   - Set financial year
-   - Configure repayment thresholds
-   - Download as JSON file (`default-help-rates.json`)
+
+#### Awards Editor
+
+1. **Load Current Awards**: Import awards from main application
+2. **Add New Award**: Create a new award template
+3. **Edit Award Properties**:
+   - All fields work the same as in main app
+   - Saturday and Sunday rates are separate fields
+   - Changes automatically update JSON output
+4. **Download Awards JSON**: Save as `default-awards.json`
+5. **Copy to Clipboard**: Copy JSON for manual use
+
+#### Tax Rates Editor
+
+1. **Set Financial Year**: Enter year (e.g., "2024-2025")
+2. **Load Current Tax Rates**: Import from main application
+3. **Add/Edit Brackets**: Configure tax brackets
+4. **Download Tax JSON**: Save as `default-tax-rates.json`
+
+#### HELP Debt Editor
+
+1. **Set Financial Year**: Enter year
+2. **Load Current HELP Rates**: Import from main application
+3. **Add/Edit Thresholds**: Configure HELP thresholds
+4. **Download HELP JSON**: Save as `default-help-rates.json`
 
 ### Using Default Configuration Files
 
@@ -109,6 +201,18 @@ The main application can load default configurations from JSON files if they exi
 You can rename these files (remove the `.example` extension) to use them as starting templates.
 
 **Note:** If the JSON files are not present or fail to load, the application will automatically fall back to the built-in hardcoded defaults.
+
+## Clear Data Functionality
+
+Each major section has a "Clear Data" button in the header that allows you to reset that specific data category:
+
+- **Clear Calculator Data**: Removes saved pay calculator inputs
+- **Clear Shift Data**: Removes saved hours calculator shift information
+- **Clear Awards Data**: Removes all custom awards (reloads defaults)
+- **Clear Tax Data**: Removes all tax bracket configurations (reloads defaults)
+- **Clear HELP Data**: Removes all HELP debt configurations (reloads defaults)
+
+All clear operations require confirmation and will reload the page after clearing data.
 
 ## Default Awards
 
@@ -157,6 +261,7 @@ Works on all modern browsers:
 - Tax and HELP debt calculations use simplified methods
 - For accurate tax calculations, please consult with a tax professional or use official ATO resources
 - Data is stored locally in your browser and is not sent to any server
+- Saturday and Sunday rates are now separate to accommodate different penalty rates for each day
 
 ## License
 
