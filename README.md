@@ -18,7 +18,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
   - First aid allowances
   - Custom allowances (unlimited)
   - Extended shift hours before overtime kicks in
-- **Smart Allowance Questions**: Automatically displays relevant allowance questions based on selected award
+- **Smart Allowance Questions**: Automatically displays relevant allowance questions based on selected award (only shows allowances configured in the award with values > $0)
 - **Australian Tax Calculation**: Uses configurable tax brackets with multi-year support
 - **HELP Debt Repayment**: Calculates HELP debt repayments with multi-year thresholds
 - **Admin Interface**: Configure awards, tax rates, and HELP debt thresholds
@@ -42,9 +42,10 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
    - Sunday hours (separate from Saturday)
    - Night shift hours
 5. Answer allowance questions that appear based on your selected award:
-   - Meal allowances (if applicable to your award)
-   - First aid certificate (if applicable to your award)
-   - Custom allowances (if applicable to your award)
+   - Meal allowances (if applicable to your award and configured with amount > $0)
+   - First aid certificate (if applicable to your award and configured with amount > $0)
+   - Custom allowances (if configured in your award)
+   - Note: Only allowances configured in your selected award will appear
 6. Enter any additional manual allowances not covered by the questions
 7. Select if you have a HELP debt
 8. Click "Calculate Pay" to see your breakdown
