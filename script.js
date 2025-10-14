@@ -292,7 +292,7 @@ function saveCalculatorData() {
         saturdayHours: document.getElementById('saturdayHours')?.value || '0',
         sundayHours: document.getElementById('sundayHours')?.value || '0',
         nightShiftHours: document.getElementById('nightShiftHours')?.value || '0',
-        allowances: document.getElementById('allowances')?.value || '0',
+        manualAllowances: document.getElementById('manualAllowances')?.value || '0',
         helpDebt: document.getElementById('helpDebt')?.value || 'false'
     };
     localStorage.setItem('calculatorData', JSON.stringify(calculatorData));
@@ -317,8 +317,16 @@ function loadCalculatorData() {
                 if (document.getElementById('sundayHours')) document.getElementById('sundayHours').value = data.sundayHours || '0';
             }
             if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = data.nightShiftHours || '0';
-            if (document.getElementById('allowances')) document.getElementById('allowances').value = data.allowances || '0';
+            // Handle backward compatibility with old allowances field
+            if (data.allowances !== undefined && !data.manualAllowances) {
+                if (document.getElementById('manualAllowances')) document.getElementById('manualAllowances').value = data.allowances || '0';
+            } else {
+                if (document.getElementById('manualAllowances')) document.getElementById('manualAllowances').value = data.manualAllowances || '0';
+            }
             if (document.getElementById('helpDebt')) document.getElementById('helpDebt').value = data.helpDebt || 'false';
+            
+            // Update allowances questions after loading award
+            updateAllowancesQuestions();
         } catch (error) {
             console.error('Error loading calculator data:', error);
         }
@@ -424,7 +432,7 @@ function applyUserSettings() {
 function setupAutoSave() {
     // Auto-save calculator data on input changes
     const calculatorFields = ['award', 'baseRate', 'payPeriod', 'normalHours', 'overtimeHours', 
-                              'saturdayHours', 'sundayHours', 'nightShiftHours', 'allowances', 'helpDebt'];
+                              'saturdayHours', 'sundayHours', 'nightShiftHours', 'manualAllowances', 'helpDebt'];
     
     calculatorFields.forEach(fieldId => {
         const element = document.getElementById(fieldId);
@@ -458,7 +466,7 @@ function addAward() {
     const nightShiftStart = document.getElementById('nightShiftStart').value;
     const nightShiftEnd = document.getElementById('nightShiftEnd').value;
     const extendedShiftHours = parseFloat(document.getElementById('extendedShiftHours').value);
-    const hasSleepover = document.getElementById('hasSleepover').value === 'true';
+    const hasSleepover = document.getElementById('hasSleepover').checked;
     const sleeperRate = parseFloat(document.getElementById('sleeperRate').value);
     const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
     const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
@@ -528,7 +536,7 @@ function addAward() {
     document.getElementById('nightShiftStart').value = '22:00';
     document.getElementById('nightShiftEnd').value = '06:00';
     document.getElementById('extendedShiftHours').value = '10';
-    document.getElementById('hasSleepover').value = 'false';
+    document.getElementById('hasSleepover').checked = false;
     document.getElementById('sleeperRate').value = '0';
     document.getElementById('mealAllowance1').value = '0';
     document.getElementById('mealAllowance1Hours').value = '5';
@@ -538,7 +546,75 @@ function addAward() {
     document.getElementById('customAllowancesContainer').innerHTML = '';
     customAllowanceCount = 0;
     
+    // Reset checkboxes and hide sections
+    document.getElementById('hasMealAllowances').checked = false;
+    document.getElementById('hasFirstAid').checked = false;
+    document.getElementById('hasCustomAllowances').checked = false;
+    toggleSleeperSection();
+    toggleMealAllowancesSection();
+    toggleFirstAidSection();
+    toggleCustomAllowancesSection();
+    
     alert('Award added successfully!');
+}
+
+// Toggle functions for award feature sections
+function toggleSleeperSection() {
+    const checkbox = document.getElementById('hasSleepover');
+    const section = document.getElementById('sleeperSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleMealAllowancesSection() {
+    const checkbox = document.getElementById('hasMealAllowances');
+    const section = document.getElementById('mealAllowancesSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleFirstAidSection() {
+    const checkbox = document.getElementById('hasFirstAid');
+    const section = document.getElementById('firstAidSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleCustomAllowancesSection() {
+    const checkbox = document.getElementById('hasCustomAllowances');
+    const section = document.getElementById('customAllowancesSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+// Clear localStorage function
+function clearLocalStorage(category) {
+    const confirmMsg = `Are you sure you want to clear all ${category} data? This action cannot be undone.`;
+    if (confirm(confirmMsg)) {
+        if (category === 'all') {
+            localStorage.clear();
+            alert('All data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'calculator') {
+            localStorage.removeItem('calculatorData');
+            alert('Calculator data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'shifts') {
+            localStorage.removeItem('shiftData');
+            alert('Shift data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'awards') {
+            localStorage.removeItem('awards');
+            alert('Awards data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'tax') {
+            localStorage.removeItem('taxBracketsByYear');
+            localStorage.removeItem('taxBrackets');
+            alert('Tax data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'help') {
+            localStorage.removeItem('helpThresholdsByYear');
+            localStorage.removeItem('helpThresholds');
+            alert('HELP debt data has been cleared. The page will now reload.');
+            location.reload();
+        }
+    }
 }
 
 function addCustomAllowanceField() {
@@ -776,6 +852,73 @@ function updateAwardDropdown() {
     if (currentValue) {
         select.value = currentValue;
     }
+    
+    // Update allowances questions when award changes
+    select.addEventListener('change', updateAllowancesQuestions);
+}
+
+// Update allowances questions based on selected award
+function updateAllowancesQuestions() {
+    const awardId = parseInt(document.getElementById('award').value);
+    const container = document.getElementById('allowancesQuestions');
+    
+    if (!awardId) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    const award = awards.find(a => a.id === awardId);
+    if (!award) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Meal allowances
+    if (award.mealAllowance1 && award.mealAllowance1 > 0) {
+        html += `
+            <div style="margin-bottom: 10px;">
+                <label for="mealAllowance1Count">Meal Allowance 1 (after ${award.mealAllowance1Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
+                <input type="number" id="mealAllowance1Count" class="form-control" min="0" value="0" placeholder="Number of times">
+            </div>
+        `;
+    }
+    
+    if (award.mealAllowance2 && award.mealAllowance2 > 0) {
+        html += `
+            <div style="margin-bottom: 10px;">
+                <label for="mealAllowance2Count">Meal Allowance 2 (after ${award.mealAllowance2Hours} hours @ $${award.mealAllowance2.toFixed(2)}):</label>
+                <input type="number" id="mealAllowance2Count" class="form-control" min="0" value="0" placeholder="Number of times">
+            </div>
+        `;
+    }
+    
+    // First aid allowance
+    if (award.firstAidAllowance && award.firstAidAllowance > 0) {
+        html += `
+            <div style="margin-bottom: 10px;">
+                <label for="hasFirstAidCertificate">
+                    <input type="checkbox" id="hasFirstAidCertificate"> Do you hold a first aid certificate? ($${award.firstAidAllowance.toFixed(2)}/week)
+                </label>
+            </div>
+        `;
+    }
+    
+    // Custom allowances
+    if (award.customAllowances && award.customAllowances.length > 0) {
+        award.customAllowances.forEach((allowance, index) => {
+            html += `
+                <div style="margin-bottom: 10px;">
+                    <label for="customAllowance${index}">
+                        <input type="checkbox" id="customAllowance${index}"> ${allowance.name} ($${allowance.amount.toFixed(2)})
+                    </label>
+                </div>
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
 }
 
 // Tax Bracket Management
@@ -957,7 +1100,7 @@ function calculatePay() {
     const saturdayHours = parseFloat(document.getElementById('saturdayHours').value) || 0;
     const sundayHours = parseFloat(document.getElementById('sundayHours').value) || 0;
     const nightShiftHours = parseFloat(document.getElementById('nightShiftHours').value) || 0;
-    const allowances = parseFloat(document.getElementById('allowances').value) || 0;
+    const manualAllowances = parseFloat(document.getElementById('manualAllowances').value) || 0;
     const hasHelpDebt = document.getElementById('helpDebt').value === 'true';
     
     // Validation
@@ -978,6 +1121,33 @@ function calculatePay() {
         return;
     }
     
+    // Calculate allowances from questions
+    let calculatedAllowances = manualAllowances;
+    
+    // Meal allowances
+    const mealAllowance1Count = parseFloat(document.getElementById('mealAllowance1Count')?.value) || 0;
+    const mealAllowance2Count = parseFloat(document.getElementById('mealAllowance2Count')?.value) || 0;
+    calculatedAllowances += (award.mealAllowance1 || 0) * mealAllowance1Count;
+    calculatedAllowances += (award.mealAllowance2 || 0) * mealAllowance2Count;
+    
+    // First aid allowance (weekly rate adjusted for pay period)
+    const hasFirstAidCertificate = document.getElementById('hasFirstAidCertificate')?.checked || false;
+    if (hasFirstAidCertificate && award.firstAidAllowance) {
+        const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
+        const weeksPerPeriod = payPeriod === 'fortnightly' ? 2 : 1;
+        calculatedAllowances += (award.firstAidAllowance * weeksPerPeriod);
+    }
+    
+    // Custom allowances
+    if (award.customAllowances && award.customAllowances.length > 0) {
+        award.customAllowances.forEach((allowance, index) => {
+            const isChecked = document.getElementById(`customAllowance${index}`)?.checked || false;
+            if (isChecked) {
+                calculatedAllowances += allowance.amount;
+            }
+        });
+    }
+    
     // Handle backward compatibility with old weekendRate
     const saturdayRate = award.saturdayRate !== undefined ? award.saturdayRate : award.weekendRate || 1.5;
     const sundayRate = award.sundayRate !== undefined ? award.sundayRate : award.weekendRate || 2.0;
@@ -990,7 +1160,7 @@ function calculatePay() {
     const nightShiftPay = nightShiftHours * baseRate * award.nightShiftRate;
     
     // Calculate gross pay
-    const grossPay = normalPay + overtimePay + saturdayPay + sundayPay + nightShiftPay + allowances;
+    const grossPay = normalPay + overtimePay + saturdayPay + sundayPay + nightShiftPay + calculatedAllowances;
     
     // Estimate annual income based on pay period
     const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
@@ -1006,7 +1176,7 @@ function calculatePay() {
     const netPay = grossPay - tax - helpRepayment;
     
     // Display results
-    displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod);
+    displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, nightShiftPay, calculatedAllowances, tax, helpRepayment, netPay, payPeriod);
 }
 
 function calculateTax(annualIncome) {

@@ -22,7 +22,10 @@
         <!-- Pay Calculator Tab -->
         <div id="calculator" class="tab-content active">
             <div class="card">
-                <h2>Calculate Your Pay</h2>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Calculate Your Pay</span>
+                    <button onclick="clearLocalStorage('calculator')" class="btn btn-danger" style="font-size: 0.8em; padding: 8px 15px;">Clear Calculator Data</button>
+                </h2>
                 
                 <div class="form-group">
                     <label for="award">Select Award:</label>
@@ -70,9 +73,14 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="allowances">Allowances ($):</label>
-                    <input type="number" id="allowances" class="form-control" step="0.01" min="0" value="0" placeholder="50.00">
+                <div class="form-group" id="allowancesQuestionsSection">
+                    <label>Allowances:</label>
+                    <div id="allowancesQuestions"></div>
+                    <div>
+                        <label for="manualAllowances">Additional Allowances ($):</label>
+                        <input type="number" id="manualAllowances" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        <small class="info-text">Enter any additional allowances not listed above</small>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -134,7 +142,10 @@
         <!-- Hours Calculator Tab -->
         <div id="hours" class="tab-content">
             <div class="card">
-                <h2>Calculate Hours Worked</h2>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Calculate Hours Worked</span>
+                    <button onclick="clearLocalStorage('shifts')" class="btn btn-danger" style="font-size: 0.8em; padding: 8px 15px;">Clear Shift Data</button>
+                </h2>
                 
                 <div class="form-group">
                     <label for="hoursAward">Select Award:</label>
@@ -217,7 +228,10 @@
         <!-- Admin Settings Tab -->
         <div id="admin" class="tab-content">
             <div class="card">
-                <h2>Award Management</h2>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Award Management</span>
+                    <button onclick="clearLocalStorage('awards')" class="btn btn-danger" style="font-size: 0.8em; padding: 8px 15px;">Clear Awards Data</button>
+                </h2>
                 
                 <div class="form-group">
                     <label for="awardName">Award Name:</label>
@@ -284,12 +298,31 @@
                     <label>Award Features:</label>
                     <div class="rate-grid">
                         <div>
-                            <label for="hasSleepover">Sleepovers Included:</label>
-                            <select id="hasSleepover" class="form-control">
-                                <option value="false">No</option>
-                                <option value="true">Yes</option>
-                            </select>
+                            <label for="hasSleepover">
+                                <input type="checkbox" id="hasSleepover" onchange="toggleSleeperSection()"> Sleepovers Included
+                            </label>
                         </div>
+                        <div>
+                            <label for="hasMealAllowances">
+                                <input type="checkbox" id="hasMealAllowances" onchange="toggleMealAllowancesSection()"> Meal Allowances
+                            </label>
+                        </div>
+                        <div>
+                            <label for="hasFirstAid">
+                                <input type="checkbox" id="hasFirstAid" onchange="toggleFirstAidSection()"> First Aid Allowance
+                            </label>
+                        </div>
+                        <div>
+                            <label for="hasCustomAllowances">
+                                <input type="checkbox" id="hasCustomAllowances" onchange="toggleCustomAllowancesSection()"> Custom Allowances
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sleeperSection" class="form-group" style="display: none;">
+                    <label>Sleepover Settings:</label>
+                    <div class="rate-grid">
                         <div>
                             <label for="sleeperRate">Sleepover Rate ($/shift):</label>
                             <input type="number" id="sleeperRate" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
@@ -297,8 +330,8 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Allowances:</label>
+                <div id="mealAllowancesSection" class="form-group" style="display: none;">
+                    <label>Meal Allowances:</label>
                     <div class="rate-grid">
                         <div>
                             <label for="mealAllowance1">Meal Allowance 1 ($/occurrence):</label>
@@ -316,6 +349,12 @@
                             <label for="mealAllowance2Hours">After how many hours:</label>
                             <input type="number" id="mealAllowance2Hours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
                         </div>
+                    </div>
+                </div>
+
+                <div id="firstAidSection" class="form-group" style="display: none;">
+                    <label>First Aid Settings:</label>
+                    <div class="rate-grid">
                         <div>
                             <label for="firstAidAllowance">First Aid Allowance ($/week):</label>
                             <input type="number" id="firstAidAllowance" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
@@ -323,7 +362,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div id="customAllowancesSection" class="form-group" style="display: none;">
                     <label>Custom Allowances:</label>
                     <div id="customAllowancesContainer"></div>
                     <button onclick="addCustomAllowanceField()" class="btn btn-secondary">Add Custom Allowance</button>
@@ -354,7 +393,10 @@
             </div>
 
             <div class="card">
-                <h2>Tax Rate Configuration</h2>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Tax Rate Configuration</span>
+                    <button onclick="clearLocalStorage('tax')" class="btn btn-danger" style="font-size: 0.8em; padding: 8px 15px;">Clear Tax Data</button>
+                </h2>
                 <p class="info-text">Configure Australian tax brackets (2024-2025 financial year defaults)</p>
                 
                 <div class="form-group">
@@ -371,7 +413,10 @@
             </div>
 
             <div class="card">
-                <h2>HELP Debt Configuration</h2>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>HELP Debt Configuration</span>
+                    <button onclick="clearLocalStorage('help')" class="btn btn-danger" style="font-size: 0.8em; padding: 8px 15px;">Clear HELP Data</button>
+                </h2>
                 <p class="info-text">Configure HELP debt repayment thresholds (2024-2025 financial year defaults)</p>
                 
                 <div class="form-group">
