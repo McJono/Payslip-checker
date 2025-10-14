@@ -8,6 +8,16 @@ let taxBrackets = []; // For backward compatibility
 let helpThresholds = []; // For backward compatibility
 let customAllowanceCount = 0;
 
+// User settings/preferences
+let userSettings = {
+    defaultAwardId: null,
+    defaultBaseRate: null,
+    defaultPayPeriod: 'fortnightly',
+    defaultHelpDebt: false,
+    defaultShiftStartTime: null,
+    defaultShiftEndTime: null
+};
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
     initializeTabs();
@@ -19,6 +29,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderHelpThresholds();
     updateAwardDropdown();
     updateHoursAwardDropdown();
+    applyUserSettings();
+    loadCalculatorData();
+    loadShiftData();
+    setupAutoSave();
 });
 
 // Tab functionality
@@ -237,11 +251,21 @@ async function loadData() {
     if (!savedHelpThresholds) {
         saveHelpThresholds();
     }
+    
+    // Load user settings
+    const savedSettings = localStorage.getItem('userSettings');
+    if (savedSettings) {
+        userSettings = { ...userSettings, ...JSON.parse(savedSettings) };
+    }
 }
 
 // Save functions
 function saveAwards() {
     localStorage.setItem('awards', JSON.stringify(awards));
+}
+
+function saveUserSettings() {
+    localStorage.setItem('userSettings', JSON.stringify(userSettings));
 }
 
 function saveTaxBrackets() {
@@ -252,6 +276,161 @@ function saveTaxBrackets() {
 function saveHelpThresholds() {
     helpThresholdsByYear[currentHelpYear] = helpThresholds;
     localStorage.setItem('helpThresholdsByYear', JSON.stringify(helpThresholdsByYear));
+}
+
+// Save and load calculator data
+function saveCalculatorData() {
+    const calculatorData = {
+        award: document.getElementById('award')?.value || '',
+        baseRate: document.getElementById('baseRate')?.value || '',
+        payPeriod: document.getElementById('payPeriod')?.value || 'fortnightly',
+        normalHours: document.getElementById('normalHours')?.value || '0',
+        overtimeHours: document.getElementById('overtimeHours')?.value || '0',
+        weekendHours: document.getElementById('weekendHours')?.value || '0',
+        nightShiftHours: document.getElementById('nightShiftHours')?.value || '0',
+        allowances: document.getElementById('allowances')?.value || '0',
+        helpDebt: document.getElementById('helpDebt')?.value || 'false'
+    };
+    localStorage.setItem('calculatorData', JSON.stringify(calculatorData));
+}
+
+function loadCalculatorData() {
+    const saved = localStorage.getItem('calculatorData');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (document.getElementById('award')) document.getElementById('award').value = data.award || '';
+            if (document.getElementById('baseRate')) document.getElementById('baseRate').value = data.baseRate || '';
+            if (document.getElementById('payPeriod')) document.getElementById('payPeriod').value = data.payPeriod || 'fortnightly';
+            if (document.getElementById('normalHours')) document.getElementById('normalHours').value = data.normalHours || '0';
+            if (document.getElementById('overtimeHours')) document.getElementById('overtimeHours').value = data.overtimeHours || '0';
+            if (document.getElementById('weekendHours')) document.getElementById('weekendHours').value = data.weekendHours || '0';
+            if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = data.nightShiftHours || '0';
+            if (document.getElementById('allowances')) document.getElementById('allowances').value = data.allowances || '0';
+            if (document.getElementById('helpDebt')) document.getElementById('helpDebt').value = data.helpDebt || 'false';
+        } catch (error) {
+            console.error('Error loading calculator data:', error);
+        }
+    }
+}
+
+// Save and load shift data
+function saveShiftData() {
+    const shiftEntries = document.querySelectorAll('.shift-entry');
+    const shifts = [];
+    
+    shiftEntries.forEach((entry, index) => {
+        const shiftIndex = entry.getAttribute('data-shift-index');
+        const shift = {
+            startDate: document.getElementById(`shiftStartDate-${shiftIndex}`)?.value || '',
+            startTime: document.getElementById(`shiftStartTime-${shiftIndex}`)?.value || '',
+            endDate: document.getElementById(`shiftEndDate-${shiftIndex}`)?.value || '',
+            endTime: document.getElementById(`shiftEndTime-${shiftIndex}`)?.value || '',
+            isSleepover: document.getElementById(`isSleepover-${shiftIndex}`)?.value || 'false'
+        };
+        shifts.push(shift);
+    });
+    
+    const shiftData = {
+        hoursAward: document.getElementById('hoursAward')?.value || '',
+        shifts: shifts,
+        shiftCount: shiftCount
+    };
+    localStorage.setItem('shiftData', JSON.stringify(shiftData));
+}
+
+function loadShiftData() {
+    const saved = localStorage.getItem('shiftData');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (document.getElementById('hoursAward')) {
+                document.getElementById('hoursAward').value = data.hoursAward || '';
+            }
+            
+            // Load shifts if they exist
+            if (data.shifts && data.shifts.length > 0) {
+                // Clear existing shifts except the first one
+                const container = document.getElementById('shiftsContainer');
+                if (container) {
+                    const firstShift = container.querySelector('.shift-entry[data-shift-index="0"]');
+                    container.innerHTML = '';
+                    if (firstShift) container.appendChild(firstShift);
+                    
+                    shiftCount = data.shiftCount || data.shifts.length;
+                    
+                    // Load first shift data
+                    if (data.shifts[0]) {
+                        const shift = data.shifts[0];
+                        if (document.getElementById('shiftStartDate-0')) document.getElementById('shiftStartDate-0').value = shift.startDate || '';
+                        if (document.getElementById('shiftStartTime-0')) document.getElementById('shiftStartTime-0').value = shift.startTime || '';
+                        if (document.getElementById('shiftEndDate-0')) document.getElementById('shiftEndDate-0').value = shift.endDate || '';
+                        if (document.getElementById('shiftEndTime-0')) document.getElementById('shiftEndTime-0').value = shift.endTime || '';
+                        if (document.getElementById('isSleepover-0')) document.getElementById('isSleepover-0').value = shift.isSleepover || 'false';
+                    }
+                    
+                    // Add additional shifts
+                    for (let i = 1; i < data.shifts.length; i++) {
+                        addShift();
+                        const shift = data.shifts[i];
+                        const idx = i;
+                        setTimeout(() => {
+                            if (document.getElementById(`shiftStartDate-${idx}`)) document.getElementById(`shiftStartDate-${idx}`).value = shift.startDate || '';
+                            if (document.getElementById(`shiftStartTime-${idx}`)) document.getElementById(`shiftStartTime-${idx}`).value = shift.startTime || '';
+                            if (document.getElementById(`shiftEndDate-${idx}`)) document.getElementById(`shiftEndDate-${idx}`).value = shift.endDate || '';
+                            if (document.getElementById(`shiftEndTime-${idx}`)) document.getElementById(`shiftEndTime-${idx}`).value = shift.endTime || '';
+                            if (document.getElementById(`isSleepover-${idx}`)) document.getElementById(`isSleepover-${idx}`).value = shift.isSleepover || 'false';
+                        }, 100);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error loading shift data:', error);
+        }
+    }
+}
+
+// Apply user settings to form defaults
+function applyUserSettings() {
+    if (userSettings.defaultAwardId && document.getElementById('award')) {
+        document.getElementById('award').value = userSettings.defaultAwardId;
+    }
+    if (userSettings.defaultAwardId && document.getElementById('hoursAward')) {
+        document.getElementById('hoursAward').value = userSettings.defaultAwardId;
+    }
+    if (userSettings.defaultBaseRate && document.getElementById('baseRate')) {
+        document.getElementById('baseRate').value = userSettings.defaultBaseRate;
+    }
+    if (userSettings.defaultPayPeriod && document.getElementById('payPeriod')) {
+        document.getElementById('payPeriod').value = userSettings.defaultPayPeriod;
+    }
+    if (userSettings.defaultHelpDebt !== undefined && document.getElementById('helpDebt')) {
+        document.getElementById('helpDebt').value = userSettings.defaultHelpDebt ? 'true' : 'false';
+    }
+}
+
+// Setup auto-save for calculator and shift data
+function setupAutoSave() {
+    // Auto-save calculator data on input changes
+    const calculatorFields = ['award', 'baseRate', 'payPeriod', 'normalHours', 'overtimeHours', 
+                              'weekendHours', 'nightShiftHours', 'allowances', 'helpDebt'];
+    
+    calculatorFields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.addEventListener('change', () => {
+                saveCalculatorData();
+            });
+        }
+    });
+    
+    // Auto-save shift data when switching tabs (to capture any changes)
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            saveCalculatorData();
+            saveShiftData();
+        });
+    });
 }
 
 // Award Management
@@ -377,6 +556,35 @@ function downloadAwards() {
     linkElement.click();
 }
 
+// Download complete configuration
+function downloadConfiguration() {
+    // Save current form data before exporting
+    saveCalculatorData();
+    saveShiftData();
+    
+    const configuration = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        awards: awards,
+        taxBracketsByYear: taxBracketsByYear,
+        helpThresholdsByYear: helpThresholdsByYear,
+        currentTaxYear: currentTaxYear,
+        currentHelpYear: currentHelpYear,
+        userSettings: userSettings,
+        calculatorData: JSON.parse(localStorage.getItem('calculatorData') || '{}'),
+        shiftData: JSON.parse(localStorage.getItem('shiftData') || '{}')
+    };
+    
+    const dataStr = JSON.stringify(configuration, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'payslip-configuration.json';
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+}
+
 function uploadAwards(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -398,6 +606,109 @@ function uploadAwards(event) {
             alert('Awards imported successfully!');
         } catch (error) {
             alert('Error parsing awards file: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    event.target.value = '';
+}
+
+// Upload and merge configuration
+function uploadConfiguration(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const config = JSON.parse(e.target.result);
+            
+            // Check if this is a configuration file (has version field) or just awards
+            if (Array.isArray(config)) {
+                // Legacy awards-only format
+                awards = config;
+                saveAwards();
+                renderAwardsList();
+                updateAwardDropdown();
+                updateHoursAwardDropdown();
+                alert('Awards imported successfully!');
+                return;
+            }
+            
+            // Full configuration format
+            if (!config.version) {
+                alert('Invalid configuration file format');
+                return;
+            }
+            
+            // Merge awards (keep existing custom awards not in uploaded config)
+            if (config.awards && Array.isArray(config.awards)) {
+                // Keep track of uploaded award IDs
+                const uploadedAwardIds = config.awards.map(a => a.id);
+                
+                // Keep local custom awards that aren't in the uploaded config
+                const localCustomAwards = awards.filter(a => !uploadedAwardIds.includes(a.id));
+                
+                // Merge: uploaded awards + remaining local custom awards
+                awards = [...config.awards, ...localCustomAwards];
+                saveAwards();
+            }
+            
+            // Merge tax brackets by year
+            if (config.taxBracketsByYear) {
+                taxBracketsByYear = { ...taxBracketsByYear, ...config.taxBracketsByYear };
+                saveTaxBrackets();
+            }
+            
+            // Merge HELP thresholds by year
+            if (config.helpThresholdsByYear) {
+                helpThresholdsByYear = { ...helpThresholdsByYear, ...config.helpThresholdsByYear };
+                saveHelpThresholds();
+            }
+            
+            // Update current years if provided
+            if (config.currentTaxYear) {
+                currentTaxYear = config.currentTaxYear;
+                taxBrackets = taxBracketsByYear[currentTaxYear] || [];
+            }
+            
+            if (config.currentHelpYear) {
+                currentHelpYear = config.currentHelpYear;
+                helpThresholds = helpThresholdsByYear[currentHelpYear] || [];
+            }
+            
+            // Merge user settings (preserve local settings not in uploaded config)
+            if (config.userSettings) {
+                userSettings = { ...userSettings, ...config.userSettings };
+                saveUserSettings();
+            }
+            
+            // Load calculator data if provided (but don't overwrite if not present in config)
+            if (config.calculatorData && Object.keys(config.calculatorData).length > 0) {
+                localStorage.setItem('calculatorData', JSON.stringify(config.calculatorData));
+            }
+            
+            // Load shift data if provided (but don't overwrite if not present in config)
+            if (config.shiftData && Object.keys(config.shiftData).length > 0) {
+                localStorage.setItem('shiftData', JSON.stringify(config.shiftData));
+            }
+            
+            // Refresh all UI components
+            renderAwardsList();
+            renderTaxYearDropdown();
+            renderHelpYearDropdown();
+            renderTaxBrackets();
+            renderHelpThresholds();
+            updateAwardDropdown();
+            updateHoursAwardDropdown();
+            applyUserSettings();
+            loadCalculatorData();
+            loadShiftData();
+            
+            alert('Configuration imported and merged successfully!');
+        } catch (error) {
+            alert('Error parsing configuration file: ' + error.message);
         }
     };
     reader.readAsText(file);

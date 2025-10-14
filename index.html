@@ -321,7 +321,16 @@
                 </div>
 
                 <div class="form-group">
-                    <h3>Import/Export Awards</h3>
+                    <h3>Import/Export Configuration</h3>
+                    <p class="info-text">Save and restore your complete configuration including awards, tax rates, HELP rates, calculator data, shifts, and settings.</p>
+                    <button onclick="downloadConfiguration()" class="btn btn-primary">Download Complete Configuration (JSON)</button>
+                    <button onclick="document.getElementById('uploadConfigInput').click()" class="btn btn-secondary">Upload Configuration (JSON)</button>
+                    <input type="file" id="uploadConfigInput" accept=".json" style="display: none;" onchange="uploadConfiguration(event)">
+                </div>
+                
+                <div class="form-group">
+                    <h3>Import/Export Awards Only</h3>
+                    <p class="info-text">Export or import only the awards (legacy format).</p>
                     <button onclick="downloadAwards()" class="btn btn-primary">Download Awards (JSON)</button>
                     <button onclick="document.getElementById('uploadAwardsInput').click()" class="btn btn-secondary">Upload Awards (JSON)</button>
                     <input type="file" id="uploadAwardsInput" accept=".json" style="display: none;" onchange="uploadAwards(event)">
