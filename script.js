@@ -96,7 +96,8 @@ async function loadData() {
                     name: 'General Retail Industry Award',
                     normalRate: 1.0,
                     overtimeRate: 1.5,
-                    weekendRate: 2.0,
+                    saturdayRate: 1.5,
+                    sundayRate: 2.0,
                     nightShiftRate: 1.25,
                     maxDailyHours: 8,
                     minBreakHours: 10,
@@ -118,7 +119,8 @@ async function loadData() {
                     name: 'Hospitality Industry Award',
                     normalRate: 1.0,
                     overtimeRate: 1.5,
-                    weekendRate: 1.75,
+                    saturdayRate: 1.5,
+                    sundayRate: 1.75,
                     nightShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
@@ -140,7 +142,8 @@ async function loadData() {
                     name: 'Manufacturing Award',
                     normalRate: 1.0,
                     overtimeRate: 1.5,
-                    weekendRate: 2.0,
+                    saturdayRate: 1.5,
+                    sundayRate: 2.0,
                     nightShiftRate: 1.3,
                     maxDailyHours: 8,
                     minBreakHours: 10,
@@ -286,9 +289,10 @@ function saveCalculatorData() {
         payPeriod: document.getElementById('payPeriod')?.value || 'fortnightly',
         normalHours: document.getElementById('normalHours')?.value || '0',
         overtimeHours: document.getElementById('overtimeHours')?.value || '0',
-        weekendHours: document.getElementById('weekendHours')?.value || '0',
+        saturdayHours: document.getElementById('saturdayHours')?.value || '0',
+        sundayHours: document.getElementById('sundayHours')?.value || '0',
         nightShiftHours: document.getElementById('nightShiftHours')?.value || '0',
-        allowances: document.getElementById('allowances')?.value || '0',
+        manualAllowances: document.getElementById('manualAllowances')?.value || '0',
         helpDebt: document.getElementById('helpDebt')?.value || 'false'
     };
     localStorage.setItem('calculatorData', JSON.stringify(calculatorData));
@@ -304,10 +308,25 @@ function loadCalculatorData() {
             if (document.getElementById('payPeriod')) document.getElementById('payPeriod').value = data.payPeriod || 'fortnightly';
             if (document.getElementById('normalHours')) document.getElementById('normalHours').value = data.normalHours || '0';
             if (document.getElementById('overtimeHours')) document.getElementById('overtimeHours').value = data.overtimeHours || '0';
-            if (document.getElementById('weekendHours')) document.getElementById('weekendHours').value = data.weekendHours || '0';
+            // Handle backward compatibility with old weekendHours
+            if (data.weekendHours !== undefined && !data.saturdayHours && !data.sundayHours) {
+                if (document.getElementById('saturdayHours')) document.getElementById('saturdayHours').value = data.weekendHours || '0';
+                if (document.getElementById('sundayHours')) document.getElementById('sundayHours').value = '0';
+            } else {
+                if (document.getElementById('saturdayHours')) document.getElementById('saturdayHours').value = data.saturdayHours || '0';
+                if (document.getElementById('sundayHours')) document.getElementById('sundayHours').value = data.sundayHours || '0';
+            }
             if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = data.nightShiftHours || '0';
-            if (document.getElementById('allowances')) document.getElementById('allowances').value = data.allowances || '0';
+            // Handle backward compatibility with old allowances field
+            if (data.allowances !== undefined && !data.manualAllowances) {
+                if (document.getElementById('manualAllowances')) document.getElementById('manualAllowances').value = data.allowances || '0';
+            } else {
+                if (document.getElementById('manualAllowances')) document.getElementById('manualAllowances').value = data.manualAllowances || '0';
+            }
             if (document.getElementById('helpDebt')) document.getElementById('helpDebt').value = data.helpDebt || 'false';
+            
+            // Update allowances questions after loading award
+            updateAllowancesQuestions();
         } catch (error) {
             console.error('Error loading calculator data:', error);
         }
@@ -413,7 +432,7 @@ function applyUserSettings() {
 function setupAutoSave() {
     // Auto-save calculator data on input changes
     const calculatorFields = ['award', 'baseRate', 'payPeriod', 'normalHours', 'overtimeHours', 
-                              'weekendHours', 'nightShiftHours', 'allowances', 'helpDebt'];
+                              'saturdayHours', 'sundayHours', 'nightShiftHours', 'manualAllowances', 'helpDebt'];
     
     calculatorFields.forEach(fieldId => {
         const element = document.getElementById(fieldId);
@@ -438,7 +457,8 @@ function addAward() {
     const name = document.getElementById('awardName').value.trim();
     const normalRate = parseFloat(document.getElementById('normalRate').value);
     const overtimeRate = parseFloat(document.getElementById('overtimeRate').value);
-    const weekendRate = parseFloat(document.getElementById('weekendRate').value);
+    const saturdayRate = parseFloat(document.getElementById('saturdayRate').value);
+    const sundayRate = parseFloat(document.getElementById('sundayRate').value);
     const nightShiftRate = parseFloat(document.getElementById('nightShiftRate').value);
     const maxDailyHours = parseFloat(document.getElementById('maxDailyHours').value);
     const minBreakHours = parseFloat(document.getElementById('minBreakHours').value);
@@ -446,7 +466,7 @@ function addAward() {
     const nightShiftStart = document.getElementById('nightShiftStart').value;
     const nightShiftEnd = document.getElementById('nightShiftEnd').value;
     const extendedShiftHours = parseFloat(document.getElementById('extendedShiftHours').value);
-    const hasSleepover = document.getElementById('hasSleepover').value === 'true';
+    const hasSleepover = document.getElementById('hasSleepover').checked;
     const sleeperRate = parseFloat(document.getElementById('sleeperRate').value);
     const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
     const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
@@ -478,7 +498,8 @@ function addAward() {
         name: name,
         normalRate: normalRate,
         overtimeRate: overtimeRate,
-        weekendRate: weekendRate,
+        saturdayRate: saturdayRate,
+        sundayRate: sundayRate,
         nightShiftRate: nightShiftRate,
         maxDailyHours: maxDailyHours || 8,
         minBreakHours: minBreakHours || 10,
@@ -506,7 +527,8 @@ function addAward() {
     document.getElementById('awardName').value = '';
     document.getElementById('normalRate').value = '1.0';
     document.getElementById('overtimeRate').value = '1.5';
-    document.getElementById('weekendRate').value = '2.0';
+    document.getElementById('saturdayRate').value = '1.5';
+    document.getElementById('sundayRate').value = '2.0';
     document.getElementById('nightShiftRate').value = '1.25';
     document.getElementById('maxDailyHours').value = '8';
     document.getElementById('minBreakHours').value = '10';
@@ -514,7 +536,7 @@ function addAward() {
     document.getElementById('nightShiftStart').value = '22:00';
     document.getElementById('nightShiftEnd').value = '06:00';
     document.getElementById('extendedShiftHours').value = '10';
-    document.getElementById('hasSleepover').value = 'false';
+    document.getElementById('hasSleepover').checked = false;
     document.getElementById('sleeperRate').value = '0';
     document.getElementById('mealAllowance1').value = '0';
     document.getElementById('mealAllowance1Hours').value = '5';
@@ -524,7 +546,75 @@ function addAward() {
     document.getElementById('customAllowancesContainer').innerHTML = '';
     customAllowanceCount = 0;
     
+    // Reset checkboxes and hide sections
+    document.getElementById('hasMealAllowances').checked = false;
+    document.getElementById('hasFirstAid').checked = false;
+    document.getElementById('hasCustomAllowances').checked = false;
+    toggleSleeperSection();
+    toggleMealAllowancesSection();
+    toggleFirstAidSection();
+    toggleCustomAllowancesSection();
+    
     alert('Award added successfully!');
+}
+
+// Toggle functions for award feature sections
+function toggleSleeperSection() {
+    const checkbox = document.getElementById('hasSleepover');
+    const section = document.getElementById('sleeperSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleMealAllowancesSection() {
+    const checkbox = document.getElementById('hasMealAllowances');
+    const section = document.getElementById('mealAllowancesSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleFirstAidSection() {
+    const checkbox = document.getElementById('hasFirstAid');
+    const section = document.getElementById('firstAidSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleCustomAllowancesSection() {
+    const checkbox = document.getElementById('hasCustomAllowances');
+    const section = document.getElementById('customAllowancesSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+// Clear localStorage function
+function clearLocalStorage(category) {
+    const confirmMsg = `Are you sure you want to clear all ${category} data? This action cannot be undone.`;
+    if (confirm(confirmMsg)) {
+        if (category === 'all') {
+            localStorage.clear();
+            alert('All data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'calculator') {
+            localStorage.removeItem('calculatorData');
+            alert('Calculator data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'shifts') {
+            localStorage.removeItem('shiftData');
+            alert('Shift data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'awards') {
+            localStorage.removeItem('awards');
+            alert('Awards data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'tax') {
+            localStorage.removeItem('taxBracketsByYear');
+            localStorage.removeItem('taxBrackets');
+            alert('Tax data has been cleared. The page will now reload.');
+            location.reload();
+        } else if (category === 'help') {
+            localStorage.removeItem('helpThresholdsByYear');
+            localStorage.removeItem('helpThresholds');
+            alert('HELP debt data has been cleared. The page will now reload.');
+            location.reload();
+        }
+    }
 }
 
 function addCustomAllowanceField() {
@@ -735,15 +825,21 @@ function renderAwardsList() {
         return;
     }
     
-    container.innerHTML = awards.map(award => `
+    container.innerHTML = awards.map(award => {
+        // Handle backward compatibility
+        const saturdayRate = award.saturdayRate !== undefined ? award.saturdayRate : award.weekendRate || 1.5;
+        const sundayRate = award.sundayRate !== undefined ? award.sundayRate : award.weekendRate || 2.0;
+        
+        return `
         <div class="award-item">
             <div class="award-info">
                 <h4>${award.name}</h4>
-                <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} | Weekend: x${award.weekendRate} | Night: x${award.nightShiftRate}</p>
+                <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} | Saturday: x${saturdayRate} | Sunday: x${sundayRate} | Night: x${award.nightShiftRate}</p>
             </div>
             <button onclick="deleteAward(${award.id})" class="btn btn-danger">Delete</button>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function updateAwardDropdown() {
@@ -756,6 +852,73 @@ function updateAwardDropdown() {
     if (currentValue) {
         select.value = currentValue;
     }
+    
+    // Update allowances questions when award changes
+    select.addEventListener('change', updateAllowancesQuestions);
+}
+
+// Update allowances questions based on selected award
+function updateAllowancesQuestions() {
+    const awardId = parseInt(document.getElementById('award').value);
+    const container = document.getElementById('allowancesQuestions');
+    
+    if (!awardId) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    const award = awards.find(a => a.id === awardId);
+    if (!award) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Meal allowances
+    if (award.mealAllowance1 && award.mealAllowance1 > 0) {
+        html += `
+            <div style="margin-bottom: 10px;">
+                <label for="mealAllowance1Count">Meal Allowance 1 (after ${award.mealAllowance1Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
+                <input type="number" id="mealAllowance1Count" class="form-control" min="0" value="0" placeholder="Number of times">
+            </div>
+        `;
+    }
+    
+    if (award.mealAllowance2 && award.mealAllowance2 > 0) {
+        html += `
+            <div style="margin-bottom: 10px;">
+                <label for="mealAllowance2Count">Meal Allowance 2 (after ${award.mealAllowance2Hours} hours @ $${award.mealAllowance2.toFixed(2)}):</label>
+                <input type="number" id="mealAllowance2Count" class="form-control" min="0" value="0" placeholder="Number of times">
+            </div>
+        `;
+    }
+    
+    // First aid allowance
+    if (award.firstAidAllowance && award.firstAidAllowance > 0) {
+        html += `
+            <div style="margin-bottom: 10px;">
+                <label for="hasFirstAidCertificate">
+                    <input type="checkbox" id="hasFirstAidCertificate"> Do you hold a first aid certificate? ($${award.firstAidAllowance.toFixed(2)}/week)
+                </label>
+            </div>
+        `;
+    }
+    
+    // Custom allowances
+    if (award.customAllowances && award.customAllowances.length > 0) {
+        award.customAllowances.forEach((allowance, index) => {
+            html += `
+                <div style="margin-bottom: 10px;">
+                    <label for="customAllowance${index}">
+                        <input type="checkbox" id="customAllowance${index}"> ${allowance.name} ($${allowance.amount.toFixed(2)})
+                    </label>
+                </div>
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
 }
 
 // Tax Bracket Management
@@ -934,9 +1097,10 @@ function calculatePay() {
     const payPeriod = document.getElementById('payPeriod').value;
     const normalHours = parseFloat(document.getElementById('normalHours').value) || 0;
     const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
-    const weekendHours = parseFloat(document.getElementById('weekendHours').value) || 0;
+    const saturdayHours = parseFloat(document.getElementById('saturdayHours').value) || 0;
+    const sundayHours = parseFloat(document.getElementById('sundayHours').value) || 0;
     const nightShiftHours = parseFloat(document.getElementById('nightShiftHours').value) || 0;
-    const allowances = parseFloat(document.getElementById('allowances').value) || 0;
+    const manualAllowances = parseFloat(document.getElementById('manualAllowances').value) || 0;
     const hasHelpDebt = document.getElementById('helpDebt').value === 'true';
     
     // Validation
@@ -957,14 +1121,46 @@ function calculatePay() {
         return;
     }
     
+    // Calculate allowances from questions
+    let calculatedAllowances = manualAllowances;
+    
+    // Meal allowances
+    const mealAllowance1Count = parseFloat(document.getElementById('mealAllowance1Count')?.value) || 0;
+    const mealAllowance2Count = parseFloat(document.getElementById('mealAllowance2Count')?.value) || 0;
+    calculatedAllowances += (award.mealAllowance1 || 0) * mealAllowance1Count;
+    calculatedAllowances += (award.mealAllowance2 || 0) * mealAllowance2Count;
+    
+    // First aid allowance (weekly rate adjusted for pay period)
+    const hasFirstAidCertificate = document.getElementById('hasFirstAidCertificate')?.checked || false;
+    if (hasFirstAidCertificate && award.firstAidAllowance) {
+        const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
+        const weeksPerPeriod = payPeriod === 'fortnightly' ? 2 : 1;
+        calculatedAllowances += (award.firstAidAllowance * weeksPerPeriod);
+    }
+    
+    // Custom allowances
+    if (award.customAllowances && award.customAllowances.length > 0) {
+        award.customAllowances.forEach((allowance, index) => {
+            const isChecked = document.getElementById(`customAllowance${index}`)?.checked || false;
+            if (isChecked) {
+                calculatedAllowances += allowance.amount;
+            }
+        });
+    }
+    
+    // Handle backward compatibility with old weekendRate
+    const saturdayRate = award.saturdayRate !== undefined ? award.saturdayRate : award.weekendRate || 1.5;
+    const sundayRate = award.sundayRate !== undefined ? award.sundayRate : award.weekendRate || 2.0;
+    
     // Calculate pay components
     const normalPay = normalHours * baseRate * award.normalRate;
     const overtimePay = overtimeHours * baseRate * award.overtimeRate;
-    const weekendPay = weekendHours * baseRate * award.weekendRate;
+    const saturdayPay = saturdayHours * baseRate * saturdayRate;
+    const sundayPay = sundayHours * baseRate * sundayRate;
     const nightShiftPay = nightShiftHours * baseRate * award.nightShiftRate;
     
     // Calculate gross pay
-    const grossPay = normalPay + overtimePay + weekendPay + nightShiftPay + allowances;
+    const grossPay = normalPay + overtimePay + saturdayPay + sundayPay + nightShiftPay + calculatedAllowances;
     
     // Estimate annual income based on pay period
     const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
@@ -980,7 +1176,7 @@ function calculatePay() {
     const netPay = grossPay - tax - helpRepayment;
     
     // Display results
-    displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod);
+    displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, nightShiftPay, calculatedAllowances, tax, helpRepayment, netPay, payPeriod);
 }
 
 function calculateTax(annualIncome) {
@@ -1005,11 +1201,12 @@ function calculateHelpDebt(annualIncome) {
     return 0;
 }
 
-function displayResults(grossPay, normalPay, overtimePay, weekendPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod) {
+function displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod) {
     document.getElementById('grossPay').textContent = formatCurrency(grossPay);
     document.getElementById('normalPay').textContent = formatCurrency(normalPay);
     document.getElementById('overtimePay').textContent = formatCurrency(overtimePay);
-    document.getElementById('weekendPay').textContent = formatCurrency(weekendPay);
+    document.getElementById('saturdayPay').textContent = formatCurrency(saturdayPay);
+    document.getElementById('sundayPay').textContent = formatCurrency(sundayPay);
     document.getElementById('nightShiftPay').textContent = formatCurrency(nightShiftPay);
     document.getElementById('allowancesPay').textContent = formatCurrency(allowances);
     document.getElementById('tax').textContent = formatCurrency(tax);
@@ -1141,7 +1338,8 @@ function calculateHours() {
     let totalHours = 0;
     let totalNormalHours = 0;
     let totalOvertimeHours = 0;
-    let totalWeekendHours = 0;
+    let totalSaturdayHours = 0;
+    let totalSundayHours = 0;
     let totalNightShiftHours = 0;
     const allWarnings = [];
     
@@ -1186,7 +1384,8 @@ function calculateHours() {
         // Calculate hours breakdown for this shift
         let normalHours = 0;
         let overtimeHours = 0;
-        let weekendHours = 0;
+        let saturdayHours = 0;
+        let sundayHours = 0;
         let nightShiftHours = 0;
         
         // Check if shift exceeds daily maximum
@@ -1202,13 +1401,18 @@ function calculateHours() {
             normalHours = adjustedShiftHours;
         }
         
-        // Calculate weekend hours
+        // Calculate weekend hours - separate Saturday and Sunday
         const startDay = start.getDay(); // 0 = Sunday, 6 = Saturday
         const endDay = end.getDay();
         
-        if (startDay === 0 || startDay === 6 || endDay === 0 || endDay === 6) {
-            // For simplicity, if any part of the shift is on weekend, count all hours as weekend
-            weekendHours = adjustedShiftHours;
+        if (startDay === 6 || endDay === 6) {
+            // Saturday shift
+            saturdayHours = adjustedShiftHours;
+            normalHours = 0;
+            overtimeHours = 0;
+        } else if (startDay === 0 || endDay === 0) {
+            // Sunday shift
+            sundayHours = adjustedShiftHours;
             normalHours = 0;
             overtimeHours = 0;
         }
@@ -1221,12 +1425,13 @@ function calculateHours() {
         // Add to totals
         totalNormalHours += normalHours;
         totalOvertimeHours += overtimeHours;
-        totalWeekendHours += weekendHours;
+        totalSaturdayHours += saturdayHours;
+        totalSundayHours += sundayHours;
         totalNightShiftHours += nightShiftHours;
     }
     
     // Display results
-    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalWeekendHours, totalNightShiftHours, allWarnings);
+    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalSaturdayHours, totalSundayHours, totalNightShiftHours, allWarnings);
 }
 
 // Helper function to calculate night shift hours
@@ -1272,11 +1477,12 @@ function calculateNightShiftHours(start, end, nightStart, nightEnd) {
 }
 
 // Display hours calculation results
-function displayHoursResults(total, normal, overtime, weekend, nightShift, warnings) {
+function displayHoursResults(total, normal, overtime, saturday, sunday, nightShift, warnings) {
     document.getElementById('totalHours').textContent = total.toFixed(2) + ' hours';
     document.getElementById('calculatedNormalHours').textContent = normal.toFixed(2) + ' hours';
     document.getElementById('calculatedOvertimeHours').textContent = overtime.toFixed(2) + ' hours';
-    document.getElementById('calculatedWeekendHours').textContent = weekend.toFixed(2) + ' hours';
+    document.getElementById('calculatedSaturdayHours').textContent = saturday.toFixed(2) + ' hours';
+    document.getElementById('calculatedSundayHours').textContent = sunday.toFixed(2) + ' hours';
     document.getElementById('calculatedNightShiftHours').textContent = nightShift.toFixed(2) + ' hours';
     
     // Display warnings
