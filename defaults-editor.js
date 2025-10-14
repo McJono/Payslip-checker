@@ -4,6 +4,7 @@ let editorTaxByYear = {};
 let editorHelpByYear = {};
 let currentEditorTaxYear = '';
 let currentEditorHelpYear = '';
+let activeTooltip = null; // Track active tooltip for mobile
 
 // Initialize the defaults editor
 document.addEventListener('DOMContentLoaded', function() {
@@ -15,8 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize mobile-friendly tooltips
 function initializeMobileTooltips() {
-    let activeTooltip = null;
-    
     // Add touch support for tooltips on mobile
     document.addEventListener('click', function(e) {
         const tooltipLabel = e.target.closest('.tooltip-label');
