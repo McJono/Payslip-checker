@@ -56,8 +56,12 @@
                             <input type="number" id="overtimeHours" class="form-control" step="0.25" min="0" value="0" placeholder="5">
                         </div>
                         <div class="hour-input">
-                            <label for="weekendHours">Weekend Hours:</label>
-                            <input type="number" id="weekendHours" class="form-control" step="0.25" min="0" value="0" placeholder="8">
+                            <label for="saturdayHours">Saturday Hours:</label>
+                            <input type="number" id="saturdayHours" class="form-control" step="0.25" min="0" value="0" placeholder="8">
+                        </div>
+                        <div class="hour-input">
+                            <label for="sundayHours">Sunday Hours:</label>
+                            <input type="number" id="sundayHours" class="form-control" step="0.25" min="0" value="0" placeholder="8">
                         </div>
                         <div class="hour-input">
                             <label for="nightShiftHours">Night Shift Hours:</label>
@@ -96,8 +100,12 @@
                         <span id="overtimePay">$0.00</span>
                     </div>
                     <div class="result-item breakdown">
-                        <span>- Weekend Pay:</span>
-                        <span id="weekendPay">$0.00</span>
+                        <span>- Saturday Pay:</span>
+                        <span id="saturdayPay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Sunday Pay:</span>
+                        <span id="sundayPay">$0.00</span>
                     </div>
                     <div class="result-item breakdown">
                         <span>- Night Shift Pay:</span>
@@ -190,8 +198,12 @@
                         <span id="calculatedOvertimeHours">0.00</span>
                     </div>
                     <div class="result-item breakdown">
-                        <span>- Weekend Hours:</span>
-                        <span id="calculatedWeekendHours">0.00</span>
+                        <span>- Saturday Hours:</span>
+                        <span id="calculatedSaturdayHours">0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Sunday Hours:</span>
+                        <span id="calculatedSundayHours">0.00</span>
                     </div>
                     <div class="result-item breakdown">
                         <span>- Night Shift Hours:</span>
@@ -224,8 +236,12 @@
                             <input type="number" id="overtimeRate" class="form-control" step="0.01" min="0" value="1.5">
                         </div>
                         <div>
-                            <label for="weekendRate">Weekend Rate (x):</label>
-                            <input type="number" id="weekendRate" class="form-control" step="0.01" min="0" value="2.0">
+                            <label for="saturdayRate">Saturday Rate (x):</label>
+                            <input type="number" id="saturdayRate" class="form-control" step="0.01" min="0" value="1.5">
+                        </div>
+                        <div>
+                            <label for="sundayRate">Sunday Rate (x):</label>
+                            <input type="number" id="sundayRate" class="form-control" step="0.01" min="0" value="2.0">
                         </div>
                         <div>
                             <label for="nightShiftRate">Night Shift Rate (x):</label>

@@ -53,7 +53,8 @@ function addEditorAward() {
         name: 'New Award',
         normalRate: 1.0,
         overtimeRate: 1.5,
-        weekendRate: 2.0,
+        saturdayRate: 1.5,
+        sundayRate: 2.0,
         nightShiftRate: 1.25,
         maxDailyHours: 8,
         minBreakHours: 10,
@@ -105,8 +106,12 @@ function renderEditorAwards() {
                     <input type="number" class="form-control" step="0.01" value="${award.overtimeRate}" onchange="updateEditorAward(${index}, 'overtimeRate', parseFloat(this.value))">
                 </div>
                 <div>
-                    <label>Weekend Rate:</label>
-                    <input type="number" class="form-control" step="0.01" value="${award.weekendRate}" onchange="updateEditorAward(${index}, 'weekendRate', parseFloat(this.value))">
+                    <label>Saturday Rate:</label>
+                    <input type="number" class="form-control" step="0.01" value="${award.saturdayRate || award.weekendRate || 1.5}" onchange="updateEditorAward(${index}, 'saturdayRate', parseFloat(this.value))">
+                </div>
+                <div>
+                    <label>Sunday Rate:</label>
+                    <input type="number" class="form-control" step="0.01" value="${award.sundayRate || award.weekendRate || 2.0}" onchange="updateEditorAward(${index}, 'sundayRate', parseFloat(this.value))">
                 </div>
                 <div>
                     <label>Night Shift Rate:</label>
