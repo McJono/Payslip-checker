@@ -53,6 +53,8 @@ function addEditorAward() {
         name: 'New Award',
         normalRate: 1.0,
         overtimeRate: 1.5,
+        overtime2Hours: 10,
+        overtime2Rate: 2.0,
         saturdayRate: 1.5,
         sundayRate: 2.0,
         nightShiftRate: 1.25,
@@ -92,18 +94,19 @@ function renderEditorAwards() {
     container.innerHTML = editorAwards.map((award, index) => `
         <div class="award-item" style="margin-bottom: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
             <h4>Award ${index + 1}</h4>
+            <div style="margin-bottom: 15px;">
+                <label>Name:</label>
+                <input type="text" class="form-control" value="${award.name}" onchange="updateEditorAward(${index}, 'name', this.value)">
+            </div>
+            
+            <h5 class="tooltip-label" style="margin-top: 20px; margin-bottom: 10px; color: #667eea;">
+                Rate Multipliers
+                <span class="tooltip-text">Define pay rate multipliers for different work conditions. Normal rate is 1.0 (base pay). Other rates are multiplied by the base hourly rate.</span>
+            </h5>
             <div class="rate-grid">
-                <div>
-                    <label>Name:</label>
-                    <input type="text" class="form-control" value="${award.name}" onchange="updateEditorAward(${index}, 'name', this.value)">
-                </div>
                 <div>
                     <label>Normal Rate:</label>
                     <input type="number" class="form-control" step="0.01" value="${award.normalRate}" onchange="updateEditorAward(${index}, 'normalRate', parseFloat(this.value))">
-                </div>
-                <div>
-                    <label>Overtime Rate:</label>
-                    <input type="number" class="form-control" step="0.01" value="${award.overtimeRate}" onchange="updateEditorAward(${index}, 'overtimeRate', parseFloat(this.value))">
                 </div>
                 <div>
                     <label>Saturday Rate:</label>
@@ -117,14 +120,40 @@ function renderEditorAwards() {
                     <label>Night Shift Rate:</label>
                     <input type="number" class="form-control" step="0.01" value="${award.nightShiftRate}" onchange="updateEditorAward(${index}, 'nightShiftRate', parseFloat(this.value))">
                 </div>
+            </div>
+            
+            <h5 class="tooltip-label" style="margin-top: 20px; margin-bottom: 10px; color: #667eea;">
+                Overtime Rules
+                <span class="tooltip-text">Configure when overtime rates apply and shift constraints. Set thresholds for when different overtime multipliers kick in based on hours worked.</span>
+            </h5>
+            <div class="rate-grid">
                 <div>
                     <label>Max Daily Hours:</label>
                     <input type="number" class="form-control" step="0.25" value="${award.maxDailyHours}" onchange="updateEditorAward(${index}, 'maxDailyHours', parseFloat(this.value))">
                 </div>
                 <div>
+                    <label>Overtime Rate:</label>
+                    <input type="number" class="form-control" step="0.01" value="${award.overtimeRate}" onchange="updateEditorAward(${index}, 'overtimeRate', parseFloat(this.value))">
+                </div>
+                <div>
+                    <label>After Hours (Overtime 2):</label>
+                    <input type="number" class="form-control" step="0.25" value="${award.overtime2Hours || 10}" onchange="updateEditorAward(${index}, 'overtime2Hours', parseFloat(this.value))">
+                </div>
+                <div>
+                    <label>Overtime Rate 2:</label>
+                    <input type="number" class="form-control" step="0.01" value="${award.overtime2Rate || 2.0}" onchange="updateEditorAward(${index}, 'overtime2Rate', parseFloat(this.value))">
+                </div>
+                <div>
                     <label>Extended Shift Hours:</label>
                     <input type="number" class="form-control" step="0.25" value="${award.extendedShiftHours}" onchange="updateEditorAward(${index}, 'extendedShiftHours', parseFloat(this.value))">
                 </div>
+            </div>
+            
+            <h5 class="tooltip-label" style="margin-top: 20px; margin-bottom: 10px; color: #667eea;">
+                Allowances & Features
+                <span class="tooltip-text">Configure sleepover, meal allowances, and first aid payments for this award.</span>
+            </h5>
+            <div class="rate-grid">
                 <div>
                     <label>Has Sleepover:</label>
                     <select class="form-control" onchange="updateEditorAward(${index}, 'hasSleepover', this.value === 'true')">

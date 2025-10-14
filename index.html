@@ -239,15 +239,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Rate Multipliers:</label>
+                    <label class="tooltip-label">Rate Multipliers:
+                        <span class="tooltip-text">Define pay rate multipliers for different work conditions. Normal rate is 1.0 (base pay). Other rates are multiplied by the base hourly rate.</span>
+                    </label>
                     <div class="rate-grid">
                         <div>
                             <label for="normalRate">Normal Rate:</label>
                             <input type="number" id="normalRate" class="form-control" step="0.01" min="0" value="1.0">
-                        </div>
-                        <div>
-                            <label for="overtimeRate">Overtime Rate (x):</label>
-                            <input type="number" id="overtimeRate" class="form-control" step="0.01" min="0" value="1.5">
                         </div>
                         <div>
                             <label for="saturdayRate">Saturday Rate (x):</label>
@@ -265,11 +263,25 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Overtime Rules:</label>
+                    <label class="tooltip-label">Overtime Rules:
+                        <span class="tooltip-text">Configure when overtime rates apply and shift constraints. Set thresholds for when different overtime multipliers kick in based on hours worked.</span>
+                    </label>
                     <div class="rate-grid">
                         <div>
                             <label for="maxDailyHours">Max Daily Hours (before overtime):</label>
                             <input type="number" id="maxDailyHours" class="form-control" step="0.25" min="0" value="8" placeholder="8">
+                        </div>
+                        <div>
+                            <label for="overtimeRate">Overtime Rate 1 (x):</label>
+                            <input type="number" id="overtimeRate" class="form-control" step="0.01" min="0" value="1.5">
+                        </div>
+                        <div>
+                            <label for="overtime2Hours">After how many hours (Overtime 2):</label>
+                            <input type="number" id="overtime2Hours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
+                        </div>
+                        <div>
+                            <label for="overtime2Rate">Overtime Rate 2 (x):</label>
+                            <input type="number" id="overtime2Rate" class="form-control" step="0.01" min="0" value="2.0">
                         </div>
                         <div>
                             <label for="minBreakHours">Min Break Between Shifts (hours):</label>
@@ -295,7 +307,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Award Features:</label>
+                    <label class="tooltip-label">Award Features:
+                        <span class="tooltip-text">Enable specific features for this award such as sleepovers, meal allowances, first aid pay, and custom allowances. Check the boxes to activate and configure each feature.</span>
+                    </label>
                     <div class="rate-grid">
                         <div>
                             <label for="hasSleepover">
@@ -321,7 +335,9 @@
                 </div>
 
                 <div id="sleeperSection" class="form-group" style="display: none;">
-                    <label>Sleepover Settings:</label>
+                    <label class="tooltip-label">Sleepover Settings:
+                        <span class="tooltip-text">Configure fixed payment for sleepover shifts. This is a flat rate paid per sleepover shift regardless of hours worked.</span>
+                    </label>
                     <div class="rate-grid">
                         <div>
                             <label for="sleeperRate">Sleepover Rate ($/shift):</label>
@@ -331,7 +347,9 @@
                 </div>
 
                 <div id="mealAllowancesSection" class="form-group" style="display: none;">
-                    <label>Meal Allowances:</label>
+                    <label class="tooltip-label">Meal Allowances:
+                        <span class="tooltip-text">Set meal allowance payments that trigger after working a certain number of hours. Allowance 1 typically applies first, followed by Allowance 2 after additional hours.</span>
+                    </label>
                     <div class="rate-grid">
                         <div>
                             <label for="mealAllowance1">Meal Allowance 1 ($/occurrence):</label>
@@ -353,7 +371,9 @@
                 </div>
 
                 <div id="firstAidSection" class="form-group" style="display: none;">
-                    <label>First Aid Settings:</label>
+                    <label class="tooltip-label">First Aid Settings:
+                        <span class="tooltip-text">Weekly allowance for employees who hold a valid first aid certificate. This amount is added to weekly pay.</span>
+                    </label>
                     <div class="rate-grid">
                         <div>
                             <label for="firstAidAllowance">First Aid Allowance ($/week):</label>
@@ -361,9 +381,14 @@
                         </div>
                     </div>
                 </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div id="customAllowancesSection" class="form-group" style="display: none;">
-                    <label>Custom Allowances:</label>
+                    <label class="tooltip-label">Custom Allowances:
+                        <span class="tooltip-text">Add unlimited custom allowances specific to this award. Each custom allowance has a name and a fixed dollar amount.</span>
+                    </label>
                     <div id="customAllowancesContainer"></div>
                     <button onclick="addCustomAllowanceField()" class="btn btn-secondary">Add Custom Allowance</button>
                 </div>
