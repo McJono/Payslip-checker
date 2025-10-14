@@ -96,6 +96,8 @@ async function loadData() {
                     name: 'General Retail Industry Award',
                     normalRate: 1.0,
                     overtimeRate: 1.5,
+                    overtime2Hours: 10,
+                    overtime2Rate: 2.0,
                     saturdayRate: 1.5,
                     sundayRate: 2.0,
                     nightShiftRate: 1.25,
@@ -119,6 +121,8 @@ async function loadData() {
                     name: 'Hospitality Industry Award',
                     normalRate: 1.0,
                     overtimeRate: 1.5,
+                    overtime2Hours: 10,
+                    overtime2Rate: 2.0,
                     saturdayRate: 1.5,
                     sundayRate: 1.75,
                     nightShiftRate: 1.15,
@@ -142,6 +146,8 @@ async function loadData() {
                     name: 'Manufacturing Award',
                     normalRate: 1.0,
                     overtimeRate: 1.5,
+                    overtime2Hours: 10,
+                    overtime2Rate: 2.0,
                     saturdayRate: 1.5,
                     sundayRate: 2.0,
                     nightShiftRate: 1.3,
@@ -457,6 +463,8 @@ function addAward() {
     const name = document.getElementById('awardName').value.trim();
     const normalRate = parseFloat(document.getElementById('normalRate').value);
     const overtimeRate = parseFloat(document.getElementById('overtimeRate').value);
+    const overtime2Hours = parseFloat(document.getElementById('overtime2Hours').value);
+    const overtime2Rate = parseFloat(document.getElementById('overtime2Rate').value);
     const saturdayRate = parseFloat(document.getElementById('saturdayRate').value);
     const sundayRate = parseFloat(document.getElementById('sundayRate').value);
     const nightShiftRate = parseFloat(document.getElementById('nightShiftRate').value);
@@ -498,6 +506,8 @@ function addAward() {
         name: name,
         normalRate: normalRate,
         overtimeRate: overtimeRate,
+        overtime2Hours: overtime2Hours || 10,
+        overtime2Rate: overtime2Rate || 2.0,
         saturdayRate: saturdayRate,
         sundayRate: sundayRate,
         nightShiftRate: nightShiftRate,
@@ -527,6 +537,8 @@ function addAward() {
     document.getElementById('awardName').value = '';
     document.getElementById('normalRate').value = '1.0';
     document.getElementById('overtimeRate').value = '1.5';
+    document.getElementById('overtime2Hours').value = '10';
+    document.getElementById('overtime2Rate').value = '2.0';
     document.getElementById('saturdayRate').value = '1.5';
     document.getElementById('sundayRate').value = '2.0';
     document.getElementById('nightShiftRate').value = '1.25';
@@ -834,7 +846,7 @@ function renderAwardsList() {
         <div class="award-item">
             <div class="award-info">
                 <h4>${award.name}</h4>
-                <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} | Saturday: x${saturdayRate} | Sunday: x${sundayRate} | Night: x${award.nightShiftRate}</p>
+                <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} (after ${award.maxDailyHours}h) | Overtime 2: x${award.overtime2Rate || 2.0} (after ${award.overtime2Hours || 10}h) | Saturday: x${saturdayRate} | Sunday: x${sundayRate} | Night: x${award.nightShiftRate}</p>
             </div>
             <button onclick="deleteAward(${award.id})" class="btn btn-danger">Delete</button>
         </div>
