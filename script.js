@@ -2092,20 +2092,22 @@ function pushHoursToCalculator() {
     // Add note about broken shifts to manual allowances field if any broken shifts detected
     let allowanceNote = '';
     if (brokenShiftHours > 0) {
-        allowanceNote = `Broken shift detected: ${brokenShiftHours.toFixed(2)} hours qualify for broken shift penalties. `;
+        allowanceNote += `Broken shift detected: ${brokenShiftHours.toFixed(2)} hours qualify for broken shift allowances. `;
     }
     
     // Add note about any warnings to user
     const warningsDiv = document.getElementById('overtimeWarnings');
     if (warningsDiv && warningsDiv.innerHTML.trim()) {
         // There are warnings - user should review them
-        if (!allowanceNote) allowanceNote = '';
         allowanceNote += 'Please review warnings in Hours Calculator for additional allowances that may apply.';
     }
     
     // Show alert with allowance information if applicable
     if (allowanceNote) {
         alert('Hours pushed to Pay Calculator.\n\nNote: ' + allowanceNote);
+    } else {
+        // Show a success message if no allowance notes
+        alert('Hours have been pushed to the Pay Calculator!');
     }
     
     // Set the same award in Pay Calculator
@@ -2119,9 +2121,4 @@ function pushHoursToCalculator() {
     
     // Switch to Pay Calculator tab
     switchTab('calculator');
-    
-    // Show a success message if no allowance notes
-    if (!allowanceNote) {
-        alert('Hours have been pushed to the Pay Calculator!');
-    }
 }
