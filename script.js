@@ -2072,6 +2072,7 @@ function pushHoursToCalculator() {
     // Get the calculated hours from the display
     const normalHours = parseFloat(document.getElementById('calculatedNormalHours').textContent) || 0;
     const overtimeHours = parseFloat(document.getElementById('calculatedOvertimeHours').textContent) || 0;
+    const brokenShiftHours = parseFloat(document.getElementById('calculatedBrokenShiftHours').textContent) || 0;
     const saturdayHours = parseFloat(document.getElementById('calculatedSaturdayHours').textContent) || 0;
     const sundayHours = parseFloat(document.getElementById('calculatedSundayHours').textContent) || 0;
     const afternoonHours = parseFloat(document.getElementById('calculatedAfternoonHours').textContent) || 0;
@@ -2088,6 +2089,25 @@ function pushHoursToCalculator() {
     if (document.getElementById('afternoonHours')) document.getElementById('afternoonHours').value = afternoonHours.toFixed(2);
     if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = nightShiftHours.toFixed(2);
     
+    // Add note about broken shifts to manual allowances field if any broken shifts detected
+    let allowanceNote = '';
+    if (brokenShiftHours > 0) {
+        allowanceNote = `Broken shift detected: ${brokenShiftHours.toFixed(2)} hours qualify for broken shift penalties. `;
+    }
+    
+    // Add note about any warnings to user
+    const warningsDiv = document.getElementById('overtimeWarnings');
+    if (warningsDiv && warningsDiv.innerHTML.trim()) {
+        // There are warnings - user should review them
+        if (!allowanceNote) allowanceNote = '';
+        allowanceNote += 'Please review warnings in Hours Calculator for additional allowances that may apply.';
+    }
+    
+    // Show alert with allowance information if applicable
+    if (allowanceNote) {
+        alert('Hours pushed to Pay Calculator.\n\nNote: ' + allowanceNote);
+    }
+    
     // Set the same award in Pay Calculator
     if (hoursAwardId && document.getElementById('award')) {
         document.getElementById('award').value = hoursAwardId;
@@ -2100,6 +2120,8 @@ function pushHoursToCalculator() {
     // Switch to Pay Calculator tab
     switchTab('calculator');
     
-    // Show a success message
-    alert('Hours have been pushed to the Pay Calculator!');
+    // Show a success message if no allowance notes
+    if (!allowanceNote) {
+        alert('Hours have been pushed to the Pay Calculator!');
+    }
 }
