@@ -948,12 +948,12 @@ function updateAllowancesQuestions() {
     }
     if (sleeperWarning) sleeperWarning.style.display = 'none';
     
-    let html = '';
+    let html = '<div class="hours-grid">';
     
     // Meal allowances
     if (award.mealAllowance1 && award.mealAllowance1 > 0) {
         html += `
-            <div style="margin-bottom: 10px;">
+            <div class="hour-input">
                 <label for="mealAllowance1Count">Meal Allowance (after ${award.mealAllowance1Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
                 <input type="number" id="mealAllowance1Count" class="form-control" min="0" value="0" placeholder="Number of times">
             </div>
@@ -962,7 +962,7 @@ function updateAllowancesQuestions() {
         // Second meal allowance (same payment, different trigger time)
         if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0) {
             html += `
-                <div style="margin-bottom: 10px;">
+                <div class="hour-input">
                     <label for="mealAllowance2Count">2nd Meal Allowance (after ${award.mealAllowance2Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
                     <input type="number" id="mealAllowance2Count" class="form-control" min="0" value="0" placeholder="Number of times">
                 </div>
@@ -973,7 +973,7 @@ function updateAllowancesQuestions() {
     // First aid allowance
     if (award.firstAidAllowance && award.firstAidAllowance > 0) {
         html += `
-            <div style="margin-bottom: 10px;">
+            <div class="hour-input">
                 <label for="firstAidHours">First Aid Hours Worked:</label>
                 <input type="number" id="firstAidHours" class="form-control" min="0" step="0.25" value="0" placeholder="Hours with first aid certificate">
                 <small class="info-text">Rate: $${award.firstAidAllowance.toFixed(2)}/hour${award.firstAidMaxAmount > 0 ? ` (max $${award.firstAidMaxAmount.toFixed(2)} per period)` : ''}</small>
@@ -985,7 +985,7 @@ function updateAllowancesQuestions() {
     if (award.customAllowances && award.customAllowances.length > 0) {
         award.customAllowances.forEach((allowance, index) => {
             html += `
-                <div style="margin-bottom: 10px;">
+                <div class="hour-input">
                     <label for="customAllowance${index}">
                         <input type="checkbox" id="customAllowance${index}"> ${allowance.name} ($${allowance.amount.toFixed(2)})
                     </label>
@@ -994,6 +994,7 @@ function updateAllowancesQuestions() {
         });
     }
     
+    html += '</div>';
     container.innerHTML = html;
 }
 
@@ -1339,6 +1340,44 @@ function updateHoursAwardDropdown() {
     if (currentValue) {
         select.value = currentValue;
     }
+    
+    // Add event listener for award changes to update sleepover agreement visibility
+    select.addEventListener('change', updateSleeperAgreementVisibility);
+}
+
+// Update visibility of sleepover agreement checkboxes based on award and shift type
+function updateSleeperAgreementVisibility() {
+    const awardId = parseInt(document.getElementById('hoursAward').value);
+    if (!awardId) return;
+    
+    const award = awards.find(a => a.id === awardId);
+    if (!award) return;
+    
+    // Only show sleepover agreement option if award has different min breaks for sleepovers
+    const showSleeperAgreement = award.hasSleepover && 
+                                  award.minBreakHoursSleepover && 
+                                  award.minBreakHoursSleepover !== 8;
+    
+    // Update all shift entries
+    document.querySelectorAll('.shift-entry').forEach(shiftEntry => {
+        const shiftIndex = shiftEntry.getAttribute('data-shift-index');
+        const sleeperSelect = document.getElementById(`isSleepover-${shiftIndex}`);
+        const agreementSection = document.getElementById(`sleeperAgreement-${shiftIndex}`);
+        
+        if (!sleeperSelect || !agreementSection) return;
+        
+        // Show/hide based on sleepover selection and award config
+        const isSleepover = sleeperSelect.value === 'true';
+        agreementSection.style.display = (showSleeperAgreement && isSleepover) ? 'block' : 'none';
+        
+        // Add event listener to sleepover select if not already added
+        if (!sleeperSelect.dataset.listenerAdded) {
+            sleeperSelect.addEventListener('change', function() {
+                updateSleeperAgreementVisibility();
+            });
+            sleeperSelect.dataset.listenerAdded = 'true';
+        }
+    });
 }
 
 // Shift management
@@ -1374,6 +1413,13 @@ function addShift() {
             </select>
         </div>
 
+        <div class="form-group sleepover-agreement-section" id="sleeperAgreement-${shiftIndex}" style="display: none;">
+            <label>
+                <input type="checkbox" id="sleeperAgreement-${shiftIndex}-checkbox" class="sleepover-agreement-checkbox">
+                Signed agreement for 8-hour break after sleepover (instead of standard sleepover break time)
+            </label>
+        </div>
+
         <div class="form-group">
             <label for="shiftEndDate-${shiftIndex}">Shift End Date:</label>
             <input type="date" id="shiftEndDate-${shiftIndex}" class="form-control shift-end-date">
@@ -1387,6 +1433,9 @@ function addShift() {
     
     container.appendChild(shiftDiv);
     shiftCount++;
+    
+    // Update sleepover agreement visibility for new shift
+    updateSleeperAgreementVisibility();
 }
 
 function removeShift(shiftIndex) {
@@ -1437,11 +1486,15 @@ function calculateHours() {
     let totalHours = 0;
     let totalNormalHours = 0;
     let totalOvertimeHours = 0;
+    let totalBrokenShiftHours = 0;
     let totalSaturdayHours = 0;
     let totalSundayHours = 0;
     let totalAfternoonHours = 0;
     let totalNightShiftHours = 0;
     const allWarnings = [];
+    
+    // Store shift times for break checking
+    const shifts = [];
     
     // Process each shift
     for (let i = 0; i < shiftEntries.length; i++) {
@@ -1452,6 +1505,7 @@ function calculateHours() {
         const endDate = document.getElementById(`shiftEndDate-${shiftIndex}`).value;
         const endTime = document.getElementById(`shiftEndTime-${shiftIndex}`).value;
         const isSleepover = document.getElementById(`isSleepover-${shiftIndex}`).value === 'true';
+        const hasSleeperAgreement = document.getElementById(`sleeperAgreement-${shiftIndex}-checkbox`)?.checked || false;
         
         // Validation for this shift
         if (!startDate || !startTime) {
@@ -1521,11 +1575,11 @@ function calculateHours() {
                 // Night shift wraps around midnight
                 endsInNightShift = (endHour > nightStartHour || endHour < nightEndHour || 
                               (endHour === nightStartHour && endMinute >= nightStartMin) ||
-                              (endHour === nightEndHour && endMinute < nightEndMin));
+                              (endHour === nightEndHour && endMinute <= nightEndMin));
             } else {
                 // Night shift doesn't wrap
                 endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute >= nightStartMin)) &&
-                              (endHour < nightEndHour || (endHour === nightEndHour && endMinute < nightEndMin)));
+                              (endHour < nightEndHour || (endHour === nightEndHour && endMinute <= nightEndMin)));
             }
             
             // Check if shift ends within afternoon shift timeframe
@@ -1534,11 +1588,11 @@ function calculateHours() {
                 // Afternoon shift wraps around midnight
                 endsInAfternoonShift = (endHour > afternoonStartHour || endHour < afternoonEndHour || 
                               (endHour === afternoonStartHour && endMinute >= afternoonStartMin) ||
-                              (endHour === afternoonEndHour && endMinute < afternoonEndMin));
+                              (endHour === afternoonEndHour && endMinute <= afternoonEndMin));
             } else {
                 // Afternoon shift doesn't wrap
                 endsInAfternoonShift = ((endHour > afternoonStartHour || (endHour === afternoonStartHour && endMinute >= afternoonStartMin)) &&
-                              (endHour < afternoonEndHour || (endHour === afternoonEndHour && endMinute < afternoonEndMin)));
+                              (endHour < afternoonEndHour || (endHour === afternoonEndHour && endMinute <= afternoonEndMin)));
             }
             
             // Determine shift rate based on end time
@@ -1592,6 +1646,22 @@ function calculateHours() {
         const adjustedShiftHours = normalHours + overtimeHours + saturdayHours + sundayHours + afternoonHours + nightShiftHours;
         totalHours += adjustedShiftHours;
         
+        // Store shift data for break checking
+        shifts.push({
+            index: i,
+            start: start,
+            end: end,
+            isSleepover: isSleepover,
+            hasSleeperAgreement: hasSleeperAgreement,
+            hours: shiftHours,
+            normalHours: normalHours,
+            overtimeHours: overtimeHours,
+            saturdayHours: saturdayHours,
+            sundayHours: sundayHours,
+            afternoonHours: afternoonHours,
+            nightShiftHours: nightShiftHours
+        });
+        
         // Add to totals
         totalNormalHours += normalHours;
         totalOvertimeHours += overtimeHours;
@@ -1601,8 +1671,66 @@ function calculateHours() {
         totalNightShiftHours += nightShiftHours;
     }
     
+    // Check for broken shifts (shifts that don't have adequate break between them)
+    if (shifts.length > 1) {
+        // Sort shifts by start time
+        shifts.sort((a, b) => a.start - b.start);
+        
+        for (let i = 1; i < shifts.length; i++) {
+            const prevShift = shifts[i - 1];
+            const currentShift = shifts[i];
+            
+            // Calculate break between shifts (in hours)
+            const breakTime = (currentShift.start - prevShift.end) / (1000 * 60 * 60);
+            
+            // Determine minimum break required
+            let minBreak = award.minBreakHours || 10;
+            if (prevShift.isSleepover && award.hasSleepover) {
+                // Check if they have a sleepover agreement for 8-hour break
+                if (prevShift.hasSleeperAgreement) {
+                    minBreak = 8;
+                } else if (award.minBreakHoursSleepover) {
+                    minBreak = award.minBreakHoursSleepover;
+                }
+            }
+            
+            // Check if break is insufficient
+            if (breakTime < minBreak && breakTime >= 0) {
+                // This is a broken shift - mark current shift hours as broken shift hours
+                allWarnings.push({
+                    title: `Broken Shift Detected - Shift ${currentShift.index + 1}`,
+                    message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). This shift may qualify for broken shift penalties.`
+                });
+                
+                // Track broken shift hours (the entire current shift is considered broken)
+                totalBrokenShiftHours += currentShift.hours;
+            }
+        }
+    }
+    
+    // Check for meal allowances (shifts over certain duration or consecutive shifts)
+    shifts.forEach((shift, index) => {
+        // Check for meal allowance based on shift duration
+        if (award.mealAllowance1 && award.mealAllowance1 > 0) {
+            if (shift.hours >= (award.mealAllowance1Hours || 5)) {
+                allWarnings.push({
+                    title: `Meal Allowance Eligible - Shift ${shift.index + 1}`,
+                    message: `Shift duration (${shift.hours.toFixed(2)} hours) qualifies for meal allowance ($${award.mealAllowance1.toFixed(2)}).`
+                });
+            }
+            
+            // Check for second meal allowance
+            if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0 && shift.hours >= award.mealAllowance2Hours) {
+                allWarnings.push({
+                    title: `2nd Meal Allowance Eligible - Shift ${shift.index + 1}`,
+                    message: `Shift duration (${shift.hours.toFixed(2)} hours) qualifies for 2nd meal allowance ($${award.mealAllowance1.toFixed(2)}).`
+                });
+            }
+        }
+    });
+    
     // Display results
-    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, allWarnings);
+    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalBrokenShiftHours, totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, allWarnings);
 }
 
 // Helper function to calculate night shift hours
@@ -1626,11 +1754,11 @@ function calculateNightShiftHours(start, end, nightStart, nightEnd) {
             // Wraps around midnight
             isNightShift = (hour > nightStartHour || hour < nightEndHour || 
                           (hour === nightStartHour && minute >= nightStartMin) ||
-                          (hour === nightEndHour && minute < nightEndMin));
+                          (hour === nightEndHour && minute <= nightEndMin));
         } else {
             // Doesn't wrap around midnight
             isNightShift = ((hour > nightStartHour || (hour === nightStartHour && minute >= nightStartMin)) &&
-                          (hour < nightEndHour || (hour === nightEndHour && minute < nightEndMin)));
+                          (hour < nightEndHour || (hour === nightEndHour && minute <= nightEndMin)));
         }
         
         if (isNightShift) {
@@ -1668,11 +1796,11 @@ function calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd) 
             // Wraps around midnight (unlikely for afternoon, but handle it)
             isAfternoonShift = (hour > afternoonStartHour || hour < afternoonEndHour || 
                           (hour === afternoonStartHour && minute >= afternoonStartMin) ||
-                          (hour === afternoonEndHour && minute < afternoonEndMin));
+                          (hour === afternoonEndHour && minute <= afternoonEndMin));
         } else {
             // Doesn't wrap around midnight (typical case)
             isAfternoonShift = ((hour > afternoonStartHour || (hour === afternoonStartHour && minute >= afternoonStartMin)) &&
-                          (hour < afternoonEndHour || (hour === afternoonEndHour && minute < afternoonEndMin)));
+                          (hour < afternoonEndHour || (hour === afternoonEndHour && minute <= afternoonEndMin)));
         }
         
         if (isAfternoonShift) {
@@ -1690,10 +1818,11 @@ function calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd) 
 }
 
 // Display hours calculation results
-function displayHoursResults(total, normal, overtime, saturday, sunday, afternoon, nightShift, warnings) {
+function displayHoursResults(total, normal, overtime, brokenShift, saturday, sunday, afternoon, nightShift, warnings) {
     document.getElementById('totalHours').textContent = total.toFixed(2) + ' hours';
     document.getElementById('calculatedNormalHours').textContent = normal.toFixed(2) + ' hours';
     document.getElementById('calculatedOvertimeHours').textContent = overtime.toFixed(2) + ' hours';
+    document.getElementById('calculatedBrokenShiftHours').textContent = brokenShift.toFixed(2) + ' hours';
     document.getElementById('calculatedSaturdayHours').textContent = saturday.toFixed(2) + ' hours';
     document.getElementById('calculatedSundayHours').textContent = sunday.toFixed(2) + ' hours';
     document.getElementById('calculatedAfternoonHours').textContent = afternoon.toFixed(2) + ' hours';
