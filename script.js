@@ -1706,26 +1706,41 @@ function calculateHours() {
         }
     }
     
-    // Check for meal allowances (shifts over certain duration or consecutive shifts)
-    shifts.forEach((shift, index) => {
-        // Check for meal allowance based on shift duration
-        if (award.mealAllowance1 && award.mealAllowance1 > 0) {
-            if (shift.hours >= (award.mealAllowance1Hours || 5)) {
-                allWarnings.push({
-                    title: `Meal Allowance Eligible - Shift ${shift.index + 1}`,
-                    message: `Shift duration (${shift.hours.toFixed(2)} hours) qualifies for meal allowance ($${award.mealAllowance1.toFixed(2)}).`
-                });
-            }
+    // Check for meal allowances (based on consecutive shifts)
+    // Meal allowance is based on having a shift and then a second shift straight after
+    if (shifts.length > 1 && award.mealAllowance1 && award.mealAllowance1 > 0) {
+        // Shifts are already sorted by start time from broken shift check
+        for (let i = 1; i < shifts.length; i++) {
+            const prevShift = shifts[i - 1];
+            const currentShift = shifts[i];
             
-            // Check for second meal allowance
-            if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0 && shift.hours >= award.mealAllowance2Hours) {
-                allWarnings.push({
-                    title: `2nd Meal Allowance Eligible - Shift ${shift.index + 1}`,
-                    message: `Shift duration (${shift.hours.toFixed(2)} hours) qualifies for 2nd meal allowance ($${award.mealAllowance1.toFixed(2)}).`
-                });
+            // Calculate break between shifts (in hours)
+            const breakTime = (currentShift.start - prevShift.end) / (1000 * 60 * 60);
+            
+            // Define what "straight after" means - using a small threshold (e.g., 1 hour or less)
+            // This ensures shifts that are truly consecutive qualify for meal allowance
+            const consecutiveThreshold = 1; // hours
+            
+            // Check if this is a consecutive shift (straight after the previous one)
+            if (breakTime >= 0 && breakTime <= consecutiveThreshold) {
+                // Check for meal allowance based on the second shift's duration
+                if (currentShift.hours >= (award.mealAllowance1Hours || 5)) {
+                    allWarnings.push({
+                        title: `Meal Allowance Eligible - Shift ${currentShift.index + 1}`,
+                        message: `Consecutive shifts detected (${breakTime.toFixed(2)} hours break). Second shift duration (${currentShift.hours.toFixed(2)} hours) qualifies for meal allowance ($${award.mealAllowance1.toFixed(2)}).`
+                    });
+                }
+                
+                // Check for second meal allowance based on the second shift's duration
+                if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0 && currentShift.hours >= award.mealAllowance2Hours) {
+                    allWarnings.push({
+                        title: `2nd Meal Allowance Eligible - Shift ${currentShift.index + 1}`,
+                        message: `Consecutive shifts detected (${breakTime.toFixed(2)} hours break). Second shift duration (${currentShift.hours.toFixed(2)} hours) qualifies for 2nd meal allowance ($${award.mealAllowance1.toFixed(2)}).`
+                    });
+                }
             }
         }
-    });
+    }
     
     // Display results
     displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalBrokenShiftHours, totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, allWarnings);
