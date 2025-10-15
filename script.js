@@ -114,6 +114,7 @@ async function loadData() {
                     minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
+                    mealAllowance2Hours: 10,
                     firstAidAllowance: 0,
                     firstAidMaxAmount: 0,
                     customAllowances: []
@@ -141,6 +142,7 @@ async function loadData() {
                     minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
+                    mealAllowance2Hours: 10,
                     firstAidAllowance: 0,
                     firstAidMaxAmount: 0,
                     customAllowances: []
@@ -168,6 +170,7 @@ async function loadData() {
                     minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
+                    mealAllowance2Hours: 10,
                     firstAidAllowance: 0,
                     firstAidMaxAmount: 0,
                     customAllowances: []
@@ -491,6 +494,7 @@ function addAward() {
     const minBreakHoursSleepover = parseFloat(document.getElementById('minBreakHoursSleepover').value);
     const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
     const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
+    const mealAllowance2Hours = parseFloat(document.getElementById('mealAllowance2Hours').value);
     const firstAidAllowance = parseFloat(document.getElementById('firstAidAllowance').value);
     const firstAidMaxAmount = parseFloat(document.getElementById('firstAidMaxAmount').value);
     
@@ -536,6 +540,7 @@ function addAward() {
         minBreakHoursSleepover: minBreakHoursSleepover || 8,
         mealAllowance1: mealAllowance1 || 0,
         mealAllowance1Hours: mealAllowance1Hours || 5,
+        mealAllowance2Hours: mealAllowance2Hours || 10,
         firstAidAllowance: firstAidAllowance || 0,
         firstAidMaxAmount: firstAidMaxAmount || 0,
         customAllowances: customAllowances
@@ -569,6 +574,7 @@ function addAward() {
     document.getElementById('minBreakHoursSleepover').value = '8';
     document.getElementById('mealAllowance1').value = '0';
     document.getElementById('mealAllowance1Hours').value = '5';
+    document.getElementById('mealAllowance2Hours').value = '10';
     document.getElementById('firstAidAllowance').value = '0';
     document.getElementById('firstAidMaxAmount').value = '0';
     document.getElementById('customAllowancesContainer').innerHTML = '';
@@ -952,6 +958,16 @@ function updateAllowancesQuestions() {
                 <input type="number" id="mealAllowance1Count" class="form-control" min="0" value="0" placeholder="Number of times">
             </div>
         `;
+        
+        // Second meal allowance (same payment, different trigger time)
+        if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0) {
+            html += `
+                <div style="margin-bottom: 10px;">
+                    <label for="mealAllowance2Count">2nd Meal Allowance (after ${award.mealAllowance2Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
+                    <input type="number" id="mealAllowance2Count" class="form-control" min="0" value="0" placeholder="Number of times">
+                </div>
+            `;
+        }
     }
     
     // First aid allowance
@@ -1188,6 +1204,10 @@ function calculatePay() {
     // Meal allowances
     const mealAllowance1Count = parseFloat(document.getElementById('mealAllowance1Count')?.value) || 0;
     calculatedAllowances += (award.mealAllowance1 || 0) * mealAllowance1Count;
+    
+    // Second meal allowance (same payment as first)
+    const mealAllowance2Count = parseFloat(document.getElementById('mealAllowance2Count')?.value) || 0;
+    calculatedAllowances += (award.mealAllowance1 || 0) * mealAllowance2Count;
     
     // First aid allowance (per hour with maximum cap)
     const firstAidHours = parseFloat(document.getElementById('firstAidHours')?.value) || 0;
@@ -1457,10 +1477,6 @@ function calculateHours() {
         const totalMilliseconds = end - start;
         const shiftHours = totalMilliseconds / (1000 * 60 * 60);
         
-        // Adjust for sleepover
-        const adjustedShiftHours = isSleepover ? Math.max(0, shiftHours - 8) : shiftHours;
-        totalHours += adjustedShiftHours;
-        
         // Calculate hours breakdown for this shift
         let normalHours = 0;
         let overtimeHours = 0;
@@ -1469,44 +1485,112 @@ function calculateHours() {
         let afternoonHours = 0;
         let nightShiftHours = 0;
         
-        // Check if shift exceeds daily maximum
-        const maxDailyHours = award.maxDailyHours || 8;
-        if (adjustedShiftHours > maxDailyHours) {
-            overtimeHours = adjustedShiftHours - maxDailyHours;
-            normalHours = maxDailyHours;
-            allWarnings.push({
-                title: `Daily Overtime Detected - Shift ${i + 1}`,
-                message: `Shift duration (${adjustedShiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
-            });
-        } else {
-            normalHours = adjustedShiftHours;
-        }
-        
         // Calculate weekend hours - separate Saturday and Sunday
         const startDay = start.getDay(); // 0 = Sunday, 6 = Saturday
         const endDay = end.getDay();
         
+        // Determine if this is a weekend shift (takes precedence)
+        const isWeekendShift = (startDay === 6 || endDay === 6 || startDay === 0 || endDay === 0);
+        
         if (startDay === 6 || endDay === 6) {
             // Saturday shift
-            saturdayHours = adjustedShiftHours;
-            normalHours = 0;
-            overtimeHours = 0;
+            saturdayHours = shiftHours;
         } else if (startDay === 0 || endDay === 0) {
             // Sunday shift
-            sundayHours = adjustedShiftHours;
-            normalHours = 0;
-            overtimeHours = 0;
+            sundayHours = shiftHours;
+        } else {
+            // Weekday shift - check for afternoon/night shift rates
+            // Issue #3: If shift ends within afternoon or night shift timeframe, entire shift is paid at that rate
+            const endHour = end.getHours();
+            const endMinute = end.getMinutes();
+            
+            // Parse shift timeframes
+            const afternoonStart = award.afternoonShiftStart || '14:00';
+            const afternoonEnd = award.afternoonShiftEnd || '22:00';
+            const nightStart = award.nightShiftStart || '22:00';
+            const nightEnd = award.nightShiftEnd || '06:00';
+            
+            const [afternoonStartHour, afternoonStartMin] = afternoonStart.split(':').map(Number);
+            const [afternoonEndHour, afternoonEndMin] = afternoonEnd.split(':').map(Number);
+            const [nightStartHour, nightStartMin] = nightStart.split(':').map(Number);
+            const [nightEndHour, nightEndMin] = nightEnd.split(':').map(Number);
+            
+            // Check if shift ends within night shift timeframe
+            let endsInNightShift = false;
+            if (nightStartHour > nightEndHour) {
+                // Night shift wraps around midnight
+                endsInNightShift = (endHour > nightStartHour || endHour < nightEndHour || 
+                              (endHour === nightStartHour && endMinute >= nightStartMin) ||
+                              (endHour === nightEndHour && endMinute < nightEndMin));
+            } else {
+                // Night shift doesn't wrap
+                endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute >= nightStartMin)) &&
+                              (endHour < nightEndHour || (endHour === nightEndHour && endMinute < nightEndMin)));
+            }
+            
+            // Check if shift ends within afternoon shift timeframe
+            let endsInAfternoonShift = false;
+            if (afternoonStartHour > afternoonEndHour) {
+                // Afternoon shift wraps around midnight
+                endsInAfternoonShift = (endHour > afternoonStartHour || endHour < afternoonEndHour || 
+                              (endHour === afternoonStartHour && endMinute >= afternoonStartMin) ||
+                              (endHour === afternoonEndHour && endMinute < afternoonEndMin));
+            } else {
+                // Afternoon shift doesn't wrap
+                endsInAfternoonShift = ((endHour > afternoonStartHour || (endHour === afternoonStartHour && endMinute >= afternoonStartMin)) &&
+                              (endHour < afternoonEndHour || (endHour === afternoonEndHour && endMinute < afternoonEndMin)));
+            }
+            
+            // Determine shift rate based on end time
+            if (endsInNightShift) {
+                // Entire shift is paid at night shift rate
+                nightShiftHours = shiftHours;
+            } else if (endsInAfternoonShift) {
+                // Entire shift is paid at afternoon shift rate
+                afternoonHours = shiftHours;
+            } else {
+                // Normal shift - check for daily overtime
+                const maxDailyHours = award.maxDailyHours || 8;
+                if (shiftHours > maxDailyHours) {
+                    overtimeHours = shiftHours - maxDailyHours;
+                    normalHours = maxDailyHours;
+                    allWarnings.push({
+                        title: `Daily Overtime Detected - Shift ${i + 1}`,
+                        message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+                    });
+                } else {
+                    normalHours = shiftHours;
+                }
+            }
         }
         
-        // Calculate night shift hours
-        const nightStart = award.nightShiftStart || '22:00';
-        const nightEnd = award.nightShiftEnd || '06:00';
-        nightShiftHours = calculateNightShiftHours(start, end, nightStart, nightEnd);
+        // Adjust for sleepover (deduct 8 hours from the calculated hours)
+        if (isSleepover) {
+            const sleeperDeduction = 8;
+            // Deduct from whichever category has hours, prioritizing in order
+            if (saturdayHours > 0) {
+                saturdayHours = Math.max(0, saturdayHours - sleeperDeduction);
+            } else if (sundayHours > 0) {
+                sundayHours = Math.max(0, sundayHours - sleeperDeduction);
+            } else if (nightShiftHours > 0) {
+                nightShiftHours = Math.max(0, nightShiftHours - sleeperDeduction);
+            } else if (afternoonHours > 0) {
+                afternoonHours = Math.max(0, afternoonHours - sleeperDeduction);
+            } else if (overtimeHours > 0) {
+                const remainingAfterOvertime = Math.max(0, overtimeHours - sleeperDeduction);
+                const deductedFromOvertime = overtimeHours - remainingAfterOvertime;
+                overtimeHours = remainingAfterOvertime;
+                if (sleeperDeduction - deductedFromOvertime > 0) {
+                    normalHours = Math.max(0, normalHours - (sleeperDeduction - deductedFromOvertime));
+                }
+            } else {
+                normalHours = Math.max(0, normalHours - sleeperDeduction);
+            }
+        }
         
-        // Calculate afternoon shift hours
-        const afternoonStart = award.afternoonShiftStart || '14:00';
-        const afternoonEnd = award.afternoonShiftEnd || '22:00';
-        afternoonHours = calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd);
+        // Calculate adjusted total for this shift
+        const adjustedShiftHours = normalHours + overtimeHours + saturdayHours + sundayHours + afternoonHours + nightShiftHours;
+        totalHours += adjustedShiftHours;
         
         // Add to totals
         totalNormalHours += normalHours;
