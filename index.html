@@ -67,6 +67,10 @@
                             <input type="number" id="sundayHours" class="form-control" step="0.25" min="0" value="0" placeholder="8">
                         </div>
                         <div class="hour-input">
+                            <label for="afternoonHours">Afternoon Shift Hours:</label>
+                            <input type="number" id="afternoonHours" class="form-control" step="0.25" min="0" value="0" placeholder="0">
+                        </div>
+                        <div class="hour-input">
                             <label for="nightShiftHours">Night Shift Hours:</label>
                             <input type="number" id="nightShiftHours" class="form-control" step="0.25" min="0" value="0" placeholder="0">
                         </div>
@@ -114,6 +118,10 @@
                     <div class="result-item breakdown">
                         <span>- Sunday Pay:</span>
                         <span id="sundayPay">$0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
+                        <span>- Afternoon Shift Pay:</span>
+                        <span id="afternoonPay">$0.00</span>
                     </div>
                     <div class="result-item breakdown">
                         <span>- Night Shift Pay:</span>
@@ -217,6 +225,10 @@
                         <span id="calculatedSundayHours">0.00</span>
                     </div>
                     <div class="result-item breakdown">
+                        <span>- Afternoon Shift Hours:</span>
+                        <span id="calculatedAfternoonHours">0.00</span>
+                    </div>
+                    <div class="result-item breakdown">
                         <span>- Night Shift Hours:</span>
                         <span id="calculatedNightShiftHours">0.00</span>
                     </div>
@@ -311,10 +323,6 @@
                             <label for="afternoonShiftEnd">Afternoon Shift End Time:</label>
                             <input type="time" id="afternoonShiftEnd" class="form-control" value="22:00">
                         </div>
-                        <div>
-                            <label for="extendedShiftHours">Extended Shift Hours (before overtime):</label>
-                            <input type="number" id="extendedShiftHours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
-                        </div>
                     </div>
                 </div>
 
@@ -354,6 +362,10 @@
                         <div>
                             <label for="sleeperRate">Sleepover Rate ($/shift):</label>
                             <input type="number" id="sleeperRate" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label for="minBreakHoursSleepover">Min Break Between Sleepovers (hours):</label>
+                            <input type="number" id="minBreakHoursSleepover" class="form-control" step="0.25" min="0" value="8" placeholder="8">
                         </div>
                     </div>
                 </div>

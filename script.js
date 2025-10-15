@@ -101,14 +101,17 @@ async function loadData() {
                     saturdayRate: 1.5,
                     sundayRate: 2.0,
                     nightShiftRate: 1.25,
+                    afternoonShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
                     maxWeeklyHours: 38,
                     nightShiftStart: '22:00',
                     nightShiftEnd: '06:00',
-                    extendedShiftHours: 10,
+                    afternoonShiftStart: '14:00',
+                    afternoonShiftEnd: '22:00',
                     hasSleepover: false,
                     sleeperRate: 0,
+                    minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
                     mealAllowance2: 0,
@@ -126,14 +129,17 @@ async function loadData() {
                     saturdayRate: 1.5,
                     sundayRate: 1.75,
                     nightShiftRate: 1.15,
+                    afternoonShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
                     maxWeeklyHours: 38,
                     nightShiftStart: '22:00',
                     nightShiftEnd: '06:00',
-                    extendedShiftHours: 10,
+                    afternoonShiftStart: '14:00',
+                    afternoonShiftEnd: '22:00',
                     hasSleepover: false,
                     sleeperRate: 0,
+                    minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
                     mealAllowance2: 0,
@@ -151,14 +157,17 @@ async function loadData() {
                     saturdayRate: 1.5,
                     sundayRate: 2.0,
                     nightShiftRate: 1.3,
+                    afternoonShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
                     maxWeeklyHours: 38,
                     nightShiftStart: '22:00',
                     nightShiftEnd: '06:00',
-                    extendedShiftHours: 10,
+                    afternoonShiftStart: '14:00',
+                    afternoonShiftEnd: '22:00',
                     hasSleepover: false,
                     sleeperRate: 0,
+                    minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
                     mealAllowance2: 0,
@@ -297,6 +306,7 @@ function saveCalculatorData() {
         overtimeHours: document.getElementById('overtimeHours')?.value || '0',
         saturdayHours: document.getElementById('saturdayHours')?.value || '0',
         sundayHours: document.getElementById('sundayHours')?.value || '0',
+        afternoonHours: document.getElementById('afternoonHours')?.value || '0',
         nightShiftHours: document.getElementById('nightShiftHours')?.value || '0',
         manualAllowances: document.getElementById('manualAllowances')?.value || '0',
         helpDebt: document.getElementById('helpDebt')?.value || 'false'
@@ -322,6 +332,7 @@ function loadCalculatorData() {
                 if (document.getElementById('saturdayHours')) document.getElementById('saturdayHours').value = data.saturdayHours || '0';
                 if (document.getElementById('sundayHours')) document.getElementById('sundayHours').value = data.sundayHours || '0';
             }
+            if (document.getElementById('afternoonHours')) document.getElementById('afternoonHours').value = data.afternoonHours || '0';
             if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = data.nightShiftHours || '0';
             // Handle backward compatibility with old allowances field
             if (data.allowances !== undefined && !data.manualAllowances) {
@@ -438,7 +449,7 @@ function applyUserSettings() {
 function setupAutoSave() {
     // Auto-save calculator data on input changes
     const calculatorFields = ['award', 'baseRate', 'payPeriod', 'normalHours', 'overtimeHours', 
-                              'saturdayHours', 'sundayHours', 'nightShiftHours', 'manualAllowances', 'helpDebt'];
+                              'saturdayHours', 'sundayHours', 'afternoonHours', 'nightShiftHours', 'manualAllowances', 'helpDebt'];
     
     calculatorFields.forEach(fieldId => {
         const element = document.getElementById(fieldId);
@@ -476,9 +487,9 @@ function addAward() {
     const nightShiftEnd = document.getElementById('nightShiftEnd').value;
     const afternoonShiftStart = document.getElementById('afternoonShiftStart').value;
     const afternoonShiftEnd = document.getElementById('afternoonShiftEnd').value;
-    const extendedShiftHours = parseFloat(document.getElementById('extendedShiftHours').value);
     const hasSleepover = document.getElementById('hasSleepover').checked;
     const sleeperRate = parseFloat(document.getElementById('sleeperRate').value);
+    const minBreakHoursSleepover = parseFloat(document.getElementById('minBreakHoursSleepover').value);
     const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
     const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
     const mealAllowance2 = parseFloat(document.getElementById('mealAllowance2').value);
@@ -522,9 +533,9 @@ function addAward() {
         nightShiftEnd: nightShiftEnd || '06:00',
         afternoonShiftStart: afternoonShiftStart || '14:00',
         afternoonShiftEnd: afternoonShiftEnd || '22:00',
-        extendedShiftHours: extendedShiftHours || 10,
         hasSleepover: hasSleepover,
         sleeperRate: sleeperRate || 0,
+        minBreakHoursSleepover: minBreakHoursSleepover || 8,
         mealAllowance1: mealAllowance1 || 0,
         mealAllowance1Hours: mealAllowance1Hours || 5,
         mealAllowance2: mealAllowance2 || 0,
@@ -556,9 +567,9 @@ function addAward() {
     document.getElementById('nightShiftEnd').value = '06:00';
     document.getElementById('afternoonShiftStart').value = '14:00';
     document.getElementById('afternoonShiftEnd').value = '22:00';
-    document.getElementById('extendedShiftHours').value = '10';
     document.getElementById('hasSleepover').checked = false;
     document.getElementById('sleeperRate').value = '0';
+    document.getElementById('minBreakHoursSleepover').value = '8';
     document.getElementById('mealAllowance1').value = '0';
     document.getElementById('mealAllowance1Hours').value = '5';
     document.getElementById('mealAllowance2').value = '0';
@@ -1140,6 +1151,7 @@ function calculatePay() {
     const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
     const saturdayHours = parseFloat(document.getElementById('saturdayHours').value) || 0;
     const sundayHours = parseFloat(document.getElementById('sundayHours').value) || 0;
+    const afternoonHours = parseFloat(document.getElementById('afternoonHours').value) || 0;
     const nightShiftHours = parseFloat(document.getElementById('nightShiftHours').value) || 0;
     const manualAllowances = parseFloat(document.getElementById('manualAllowances').value) || 0;
     const hasHelpDebt = document.getElementById('helpDebt').value === 'true';
@@ -1192,16 +1204,18 @@ function calculatePay() {
     // Handle backward compatibility with old weekendRate
     const saturdayRate = award.saturdayRate !== undefined ? award.saturdayRate : award.weekendRate || 1.5;
     const sundayRate = award.sundayRate !== undefined ? award.sundayRate : award.weekendRate || 2.0;
+    const afternoonShiftRate = award.afternoonShiftRate || 1.15;
     
     // Calculate pay components
     const normalPay = normalHours * baseRate * award.normalRate;
     const overtimePay = overtimeHours * baseRate * award.overtimeRate;
     const saturdayPay = saturdayHours * baseRate * saturdayRate;
     const sundayPay = sundayHours * baseRate * sundayRate;
+    const afternoonPay = afternoonHours * baseRate * afternoonShiftRate;
     const nightShiftPay = nightShiftHours * baseRate * award.nightShiftRate;
     
     // Calculate gross pay
-    const grossPay = normalPay + overtimePay + saturdayPay + sundayPay + nightShiftPay + calculatedAllowances;
+    const grossPay = normalPay + overtimePay + saturdayPay + sundayPay + afternoonPay + nightShiftPay + calculatedAllowances;
     
     // Estimate annual income based on pay period
     const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
@@ -1217,7 +1231,7 @@ function calculatePay() {
     const netPay = grossPay - tax - helpRepayment;
     
     // Display results
-    displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, nightShiftPay, calculatedAllowances, tax, helpRepayment, netPay, payPeriod);
+    displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, afternoonPay, nightShiftPay, calculatedAllowances, tax, helpRepayment, netPay, payPeriod);
 }
 
 function calculateTax(annualIncome) {
@@ -1242,12 +1256,13 @@ function calculateHelpDebt(annualIncome) {
     return 0;
 }
 
-function displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod) {
+function displayResults(grossPay, normalPay, overtimePay, saturdayPay, sundayPay, afternoonPay, nightShiftPay, allowances, tax, helpRepayment, netPay, payPeriod) {
     document.getElementById('grossPay').textContent = formatCurrency(grossPay);
     document.getElementById('normalPay').textContent = formatCurrency(normalPay);
     document.getElementById('overtimePay').textContent = formatCurrency(overtimePay);
     document.getElementById('saturdayPay').textContent = formatCurrency(saturdayPay);
     document.getElementById('sundayPay').textContent = formatCurrency(sundayPay);
+    document.getElementById('afternoonPay').textContent = formatCurrency(afternoonPay);
     document.getElementById('nightShiftPay').textContent = formatCurrency(nightShiftPay);
     document.getElementById('allowancesPay').textContent = formatCurrency(allowances);
     document.getElementById('tax').textContent = formatCurrency(tax);
@@ -1381,6 +1396,7 @@ function calculateHours() {
     let totalOvertimeHours = 0;
     let totalSaturdayHours = 0;
     let totalSundayHours = 0;
+    let totalAfternoonHours = 0;
     let totalNightShiftHours = 0;
     const allWarnings = [];
     
@@ -1427,6 +1443,7 @@ function calculateHours() {
         let overtimeHours = 0;
         let saturdayHours = 0;
         let sundayHours = 0;
+        let afternoonHours = 0;
         let nightShiftHours = 0;
         
         // Check if shift exceeds daily maximum
@@ -1463,16 +1480,22 @@ function calculateHours() {
         const nightEnd = award.nightShiftEnd || '06:00';
         nightShiftHours = calculateNightShiftHours(start, end, nightStart, nightEnd);
         
+        // Calculate afternoon shift hours
+        const afternoonStart = award.afternoonShiftStart || '14:00';
+        const afternoonEnd = award.afternoonShiftEnd || '22:00';
+        afternoonHours = calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd);
+        
         // Add to totals
         totalNormalHours += normalHours;
         totalOvertimeHours += overtimeHours;
         totalSaturdayHours += saturdayHours;
         totalSundayHours += sundayHours;
+        totalAfternoonHours += afternoonHours;
         totalNightShiftHours += nightShiftHours;
     }
     
     // Display results
-    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalSaturdayHours, totalSundayHours, totalNightShiftHours, allWarnings);
+    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, allWarnings);
 }
 
 // Helper function to calculate night shift hours
@@ -1517,13 +1540,56 @@ function calculateNightShiftHours(start, end, nightStart, nightEnd) {
     return nightHours;
 }
 
+// Helper function to calculate afternoon shift hours
+function calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd) {
+    // Parse afternoon shift times
+    const [afternoonStartHour, afternoonStartMin] = afternoonStart.split(':').map(Number);
+    const [afternoonEndHour, afternoonEndMin] = afternoonEnd.split(':').map(Number);
+    
+    let afternoonHours = 0;
+    let current = new Date(start);
+    
+    // Iterate through each hour of the shift
+    while (current < end) {
+        const hour = current.getHours();
+        const minute = current.getMinutes();
+        
+        // Check if current time is within afternoon shift hours
+        // Afternoon shift typically doesn't wrap around midnight, but handle it anyway
+        let isAfternoonShift = false;
+        if (afternoonStartHour > afternoonEndHour) {
+            // Wraps around midnight (unlikely for afternoon, but handle it)
+            isAfternoonShift = (hour > afternoonStartHour || hour < afternoonEndHour || 
+                          (hour === afternoonStartHour && minute >= afternoonStartMin) ||
+                          (hour === afternoonEndHour && minute < afternoonEndMin));
+        } else {
+            // Doesn't wrap around midnight (typical case)
+            isAfternoonShift = ((hour > afternoonStartHour || (hour === afternoonStartHour && minute >= afternoonStartMin)) &&
+                          (hour < afternoonEndHour || (hour === afternoonEndHour && minute < afternoonEndMin)));
+        }
+        
+        if (isAfternoonShift) {
+            // Calculate the fraction of hour that's in afternoon shift
+            const nextHour = new Date(current.getTime() + 60 * 60 * 1000);
+            const increment = Math.min(nextHour, end) - current;
+            afternoonHours += increment / (1000 * 60 * 60);
+        }
+        
+        // Move to next hour
+        current = new Date(current.getTime() + 60 * 60 * 1000);
+    }
+    
+    return afternoonHours;
+}
+
 // Display hours calculation results
-function displayHoursResults(total, normal, overtime, saturday, sunday, nightShift, warnings) {
+function displayHoursResults(total, normal, overtime, saturday, sunday, afternoon, nightShift, warnings) {
     document.getElementById('totalHours').textContent = total.toFixed(2) + ' hours';
     document.getElementById('calculatedNormalHours').textContent = normal.toFixed(2) + ' hours';
     document.getElementById('calculatedOvertimeHours').textContent = overtime.toFixed(2) + ' hours';
     document.getElementById('calculatedSaturdayHours').textContent = saturday.toFixed(2) + ' hours';
     document.getElementById('calculatedSundayHours').textContent = sunday.toFixed(2) + ' hours';
+    document.getElementById('calculatedAfternoonHours').textContent = afternoon.toFixed(2) + ' hours';
     document.getElementById('calculatedNightShiftHours').textContent = nightShift.toFixed(2) + ' hours';
     
     // Display warnings
