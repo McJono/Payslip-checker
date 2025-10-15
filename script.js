@@ -114,9 +114,8 @@ async function loadData() {
                     minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
-                    mealAllowance2: 0,
-                    mealAllowance2Hours: 10,
                     firstAidAllowance: 0,
+                    firstAidMaxAmount: 0,
                     customAllowances: []
                 },
                 {
@@ -142,9 +141,8 @@ async function loadData() {
                     minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
-                    mealAllowance2: 0,
-                    mealAllowance2Hours: 10,
                     firstAidAllowance: 0,
+                    firstAidMaxAmount: 0,
                     customAllowances: []
                 },
                 {
@@ -170,9 +168,8 @@ async function loadData() {
                     minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
-                    mealAllowance2: 0,
-                    mealAllowance2Hours: 10,
                     firstAidAllowance: 0,
+                    firstAidMaxAmount: 0,
                     customAllowances: []
                 }
             ];
@@ -309,7 +306,8 @@ function saveCalculatorData() {
         afternoonHours: document.getElementById('afternoonHours')?.value || '0',
         nightShiftHours: document.getElementById('nightShiftHours')?.value || '0',
         manualAllowances: document.getElementById('manualAllowances')?.value || '0',
-        helpDebt: document.getElementById('helpDebt')?.value || 'false'
+        helpDebt: document.getElementById('helpDebt')?.value || 'false',
+        sleeperRateInput: document.getElementById('sleeperRateInput')?.value || '0'
     };
     localStorage.setItem('calculatorData', JSON.stringify(calculatorData));
 }
@@ -341,6 +339,7 @@ function loadCalculatorData() {
                 if (document.getElementById('manualAllowances')) document.getElementById('manualAllowances').value = data.manualAllowances || '0';
             }
             if (document.getElementById('helpDebt')) document.getElementById('helpDebt').value = data.helpDebt || 'false';
+            if (document.getElementById('sleeperRateInput')) document.getElementById('sleeperRateInput').value = data.sleeperRateInput || '0';
             
             // Update allowances questions after loading award
             updateAllowancesQuestions();
@@ -449,7 +448,7 @@ function applyUserSettings() {
 function setupAutoSave() {
     // Auto-save calculator data on input changes
     const calculatorFields = ['award', 'baseRate', 'payPeriod', 'normalHours', 'overtimeHours', 
-                              'saturdayHours', 'sundayHours', 'afternoonHours', 'nightShiftHours', 'manualAllowances', 'helpDebt'];
+                              'saturdayHours', 'sundayHours', 'afternoonHours', 'nightShiftHours', 'manualAllowances', 'helpDebt', 'sleeperRateInput'];
     
     calculatorFields.forEach(fieldId => {
         const element = document.getElementById(fieldId);
@@ -492,9 +491,8 @@ function addAward() {
     const minBreakHoursSleepover = parseFloat(document.getElementById('minBreakHoursSleepover').value);
     const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
     const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
-    const mealAllowance2 = parseFloat(document.getElementById('mealAllowance2').value);
-    const mealAllowance2Hours = parseFloat(document.getElementById('mealAllowance2Hours').value);
     const firstAidAllowance = parseFloat(document.getElementById('firstAidAllowance').value);
+    const firstAidMaxAmount = parseFloat(document.getElementById('firstAidMaxAmount').value);
     
     if (!name) {
         alert('Please enter an award name');
@@ -538,9 +536,8 @@ function addAward() {
         minBreakHoursSleepover: minBreakHoursSleepover || 8,
         mealAllowance1: mealAllowance1 || 0,
         mealAllowance1Hours: mealAllowance1Hours || 5,
-        mealAllowance2: mealAllowance2 || 0,
-        mealAllowance2Hours: mealAllowance2Hours || 10,
         firstAidAllowance: firstAidAllowance || 0,
+        firstAidMaxAmount: firstAidMaxAmount || 0,
         customAllowances: customAllowances
     };
     
@@ -572,9 +569,8 @@ function addAward() {
     document.getElementById('minBreakHoursSleepover').value = '8';
     document.getElementById('mealAllowance1').value = '0';
     document.getElementById('mealAllowance1Hours').value = '5';
-    document.getElementById('mealAllowance2').value = '0';
-    document.getElementById('mealAllowance2Hours').value = '10';
     document.getElementById('firstAidAllowance').value = '0';
+    document.getElementById('firstAidMaxAmount').value = '0';
     document.getElementById('customAllowancesContainer').innerHTML = '';
     customAllowanceCount = 0;
     
@@ -913,17 +909,38 @@ function updateAwardDropdown() {
 function updateAllowancesQuestions() {
     const awardId = parseInt(document.getElementById('award').value);
     const container = document.getElementById('allowancesQuestions');
+    const sleeperSection = document.getElementById('sleeperRateInputSection');
+    const sleeperWarning = document.getElementById('sleeperRateWarning');
     
     if (!awardId) {
         container.innerHTML = '';
+        if (sleeperSection) sleeperSection.style.display = 'none';
+        if (sleeperWarning) sleeperWarning.style.display = 'none';
         return;
     }
     
     const award = awards.find(a => a.id === awardId);
     if (!award) {
         container.innerHTML = '';
+        if (sleeperSection) sleeperSection.style.display = 'none';
+        if (sleeperWarning) sleeperWarning.style.display = 'none';
         return;
     }
+    
+    // Show/hide sleepover rate input based on award
+    if (sleeperSection) {
+        if (award.hasSleepover) {
+            sleeperSection.style.display = 'block';
+            // Update placeholder with minimum rate
+            const sleeperInput = document.getElementById('sleeperRateInput');
+            if (sleeperInput && award.sleeperRate > 0) {
+                sleeperInput.placeholder = `Min: ${award.sleeperRate.toFixed(2)}`;
+            }
+        } else {
+            sleeperSection.style.display = 'none';
+        }
+    }
+    if (sleeperWarning) sleeperWarning.style.display = 'none';
     
     let html = '';
     
@@ -931,17 +948,8 @@ function updateAllowancesQuestions() {
     if (award.mealAllowance1 && award.mealAllowance1 > 0) {
         html += `
             <div style="margin-bottom: 10px;">
-                <label for="mealAllowance1Count">Meal Allowance 1 (after ${award.mealAllowance1Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
+                <label for="mealAllowance1Count">Meal Allowance (after ${award.mealAllowance1Hours} hours @ $${award.mealAllowance1.toFixed(2)}):</label>
                 <input type="number" id="mealAllowance1Count" class="form-control" min="0" value="0" placeholder="Number of times">
-            </div>
-        `;
-    }
-    
-    if (award.mealAllowance2 && award.mealAllowance2 > 0) {
-        html += `
-            <div style="margin-bottom: 10px;">
-                <label for="mealAllowance2Count">Meal Allowance 2 (after ${award.mealAllowance2Hours} hours @ $${award.mealAllowance2.toFixed(2)}):</label>
-                <input type="number" id="mealAllowance2Count" class="form-control" min="0" value="0" placeholder="Number of times">
             </div>
         `;
     }
@@ -950,9 +958,9 @@ function updateAllowancesQuestions() {
     if (award.firstAidAllowance && award.firstAidAllowance > 0) {
         html += `
             <div style="margin-bottom: 10px;">
-                <label for="hasFirstAidCertificate">
-                    <input type="checkbox" id="hasFirstAidCertificate"> Do you hold a first aid certificate? ($${award.firstAidAllowance.toFixed(2)}/week)
-                </label>
+                <label for="firstAidHours">First Aid Hours Worked:</label>
+                <input type="number" id="firstAidHours" class="form-control" min="0" step="0.25" value="0" placeholder="Hours with first aid certificate">
+                <small class="info-text">Rate: $${award.firstAidAllowance.toFixed(2)}/hour${award.firstAidMaxAmount > 0 ? ` (max $${award.firstAidMaxAmount.toFixed(2)} per period)` : ''}</small>
             </div>
         `;
     }
@@ -1179,16 +1187,31 @@ function calculatePay() {
     
     // Meal allowances
     const mealAllowance1Count = parseFloat(document.getElementById('mealAllowance1Count')?.value) || 0;
-    const mealAllowance2Count = parseFloat(document.getElementById('mealAllowance2Count')?.value) || 0;
     calculatedAllowances += (award.mealAllowance1 || 0) * mealAllowance1Count;
-    calculatedAllowances += (award.mealAllowance2 || 0) * mealAllowance2Count;
     
-    // First aid allowance (weekly rate adjusted for pay period)
-    const hasFirstAidCertificate = document.getElementById('hasFirstAidCertificate')?.checked || false;
-    if (hasFirstAidCertificate && award.firstAidAllowance) {
-        const periodsPerYear = payPeriod === 'fortnightly' ? 26 : 52;
-        const weeksPerPeriod = payPeriod === 'fortnightly' ? 2 : 1;
-        calculatedAllowances += (award.firstAidAllowance * weeksPerPeriod);
+    // First aid allowance (per hour with maximum cap)
+    const firstAidHours = parseFloat(document.getElementById('firstAidHours')?.value) || 0;
+    if (firstAidHours > 0 && award.firstAidAllowance) {
+        let firstAidAmount = firstAidHours * award.firstAidAllowance;
+        // Apply maximum cap if set
+        if (award.firstAidMaxAmount && award.firstAidMaxAmount > 0) {
+            firstAidAmount = Math.min(firstAidAmount, award.firstAidMaxAmount);
+        }
+        calculatedAllowances += firstAidAmount;
+    }
+    
+    // Sleepover allowance (user input with minimum validation)
+    const sleeperRateInput = parseFloat(document.getElementById('sleeperRateInput')?.value) || 0;
+    if (sleeperRateInput > 0) {
+        // Check if below minimum and show warning
+        const minSleeperRate = award.sleeperRate || 0;
+        const sleeperWarning = document.getElementById('sleeperRateWarning');
+        if (sleeperRateInput < minSleeperRate && minSleeperRate > 0) {
+            if (sleeperWarning) sleeperWarning.style.display = 'block';
+        } else {
+            if (sleeperWarning) sleeperWarning.style.display = 'none';
+        }
+        calculatedAllowances += sleeperRateInput;
     }
     
     // Custom allowances
@@ -1609,4 +1632,41 @@ function displayHoursResults(total, normal, overtime, saturday, sunday, afternoo
     
     // Scroll to results
     document.getElementById('hoursResults').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Push calculated hours to Pay Calculator
+function pushHoursToCalculator() {
+    // Get the calculated hours from the display
+    const normalHours = parseFloat(document.getElementById('calculatedNormalHours').textContent) || 0;
+    const overtimeHours = parseFloat(document.getElementById('calculatedOvertimeHours').textContent) || 0;
+    const saturdayHours = parseFloat(document.getElementById('calculatedSaturdayHours').textContent) || 0;
+    const sundayHours = parseFloat(document.getElementById('calculatedSundayHours').textContent) || 0;
+    const afternoonHours = parseFloat(document.getElementById('calculatedAfternoonHours').textContent) || 0;
+    const nightShiftHours = parseFloat(document.getElementById('calculatedNightShiftHours').textContent) || 0;
+    
+    // Get the award from Hours Calculator
+    const hoursAwardId = document.getElementById('hoursAward').value;
+    
+    // Set values in Pay Calculator
+    if (document.getElementById('normalHours')) document.getElementById('normalHours').value = normalHours.toFixed(2);
+    if (document.getElementById('overtimeHours')) document.getElementById('overtimeHours').value = overtimeHours.toFixed(2);
+    if (document.getElementById('saturdayHours')) document.getElementById('saturdayHours').value = saturdayHours.toFixed(2);
+    if (document.getElementById('sundayHours')) document.getElementById('sundayHours').value = sundayHours.toFixed(2);
+    if (document.getElementById('afternoonHours')) document.getElementById('afternoonHours').value = afternoonHours.toFixed(2);
+    if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = nightShiftHours.toFixed(2);
+    
+    // Set the same award in Pay Calculator
+    if (hoursAwardId && document.getElementById('award')) {
+        document.getElementById('award').value = hoursAwardId;
+        updateAllowancesQuestions();
+    }
+    
+    // Save the calculator data
+    saveCalculatorData();
+    
+    // Switch to Pay Calculator tab
+    switchTab('calculator');
+    
+    // Show a success message
+    alert('Hours have been pushed to the Pay Calculator!');
 }

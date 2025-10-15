@@ -39,6 +39,12 @@
                     <input type="number" id="baseRate" class="form-control" step="0.01" min="0" placeholder="25.00">
                 </div>
 
+                <div class="form-group" id="sleeperRateInputSection" style="display: none;">
+                    <label for="sleeperRateInput">Sleepover Rate ($/shift):</label>
+                    <input type="number" id="sleeperRateInput" class="form-control" step="0.01" min="0" placeholder="0.00">
+                    <small class="info-text" id="sleeperRateWarning" style="color: #e74c3c; display: none;">Warning: This is below the minimum sleepover rate for this award</small>
+                </div>
+
                 <div class="form-group">
                     <label for="payPeriod">Pay Period:</label>
                     <select id="payPeriod" class="form-control">
@@ -233,6 +239,7 @@
                         <span id="calculatedNightShiftHours">0.00</span>
                     </div>
                     <div id="overtimeWarnings" class="overtime-warnings"></div>
+                    <button onclick="pushHoursToCalculator()" class="btn btn-primary" style="margin-top: 20px;">Push Hours to Pay Calculator</button>
                 </div>
             </div>
         </div>
@@ -372,36 +379,32 @@
 
                 <div id="mealAllowancesSection" class="form-group" style="display: none;">
                     <label class="tooltip-label">Meal Allowances:
-                        <span class="tooltip-text">Set meal allowance payments that trigger after working a certain number of hours. Allowance 1 typically applies first, followed by Allowance 2 after additional hours.</span>
+                        <span class="tooltip-text">Set meal allowance payments that trigger after working a certain number of hours.</span>
                     </label>
                     <div class="rate-grid">
                         <div>
-                            <label for="mealAllowance1">Meal Allowance 1 ($/occurrence):</label>
+                            <label for="mealAllowance1">Meal Allowance ($/occurrence):</label>
                             <input type="number" id="mealAllowance1" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
                         </div>
                         <div>
                             <label for="mealAllowance1Hours">After how many hours:</label>
                             <input type="number" id="mealAllowance1Hours" class="form-control" step="0.25" min="0" value="5" placeholder="5">
                         </div>
-                        <div>
-                            <label for="mealAllowance2">Meal Allowance 2 ($/occurrence):</label>
-                            <input type="number" id="mealAllowance2" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
-                        </div>
-                        <div>
-                            <label for="mealAllowance2Hours">After how many hours:</label>
-                            <input type="number" id="mealAllowance2Hours" class="form-control" step="0.25" min="0" value="10" placeholder="10">
-                        </div>
                     </div>
                 </div>
 
                 <div id="firstAidSection" class="form-group" style="display: none;">
                     <label class="tooltip-label">First Aid Settings:
-                        <span class="tooltip-text">Weekly allowance for employees who hold a valid first aid certificate. This amount is added to weekly pay.</span>
+                        <span class="tooltip-text">Hourly allowance for employees who hold a valid first aid certificate, with a maximum cap per pay period.</span>
                     </label>
                     <div class="rate-grid">
                         <div>
-                            <label for="firstAidAllowance">First Aid Allowance ($/week):</label>
+                            <label for="firstAidAllowance">First Aid Allowance ($/hour):</label>
                             <input type="number" id="firstAidAllowance" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label for="firstAidMaxAmount">Maximum Amount ($ per period):</label>
+                            <input type="number" id="firstAidMaxAmount" class="form-control" step="0.01" min="0" value="0" placeholder="0.00">
                         </div>
                     </div>
                 </div>
