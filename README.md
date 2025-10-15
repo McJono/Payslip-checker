@@ -12,6 +12,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
   - Saturday rates (configurable multiplier)
   - Sunday rates (configurable multiplier)
   - Night shift rates (configurable multiplier)
+  - Afternoon shift rates (configurable multiplier)
 - **Award Allowances**: Configure awards with:
   - Meal allowances (up to 2) triggered after specified hours
   - Sleepover shift support with custom rates
@@ -23,7 +24,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 - **HELP Debt Repayment**: Calculates HELP debt repayments with multi-year thresholds
 - **Admin Interface**: Configure awards, tax rates, and HELP debt thresholds
 - **Import/Export**: Download and upload award configurations as JSON files
-- **Defaults Editor**: Separate tool (defaults-editor.html) for designing JSON configuration files
+- **Defaults Configuration Export**: Download defaults configuration for awards, tax rates, and HELP debt thresholds as a single JSON file
 - **Custom Default Configurations**: Load default settings from JSON files (optional)
 - **Persistent Storage**: Settings saved in browser local storage
 - **Clear Data Options**: Individual clear buttons for each data category
@@ -63,12 +64,15 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
      - Saturday Rate: Weekend penalty rate for Saturdays (e.g., 1.5)
      - Sunday Rate: Weekend penalty rate for Sundays (e.g., 2.0)
      - Night Shift Rate: Penalty for night work (e.g., 1.25)
+     - Afternoon Shift Rate: Penalty for afternoon shift work (e.g., 1.15)
    - **Overtime Rules**:
      - Max Daily Hours: Hours before daily overtime kicks in (default: 8)
      - Min Break Between Shifts: Minimum rest period in hours (default: 10)
      - Max Weekly Hours: Hours before weekly overtime kicks in (default: 38)
      - Night Shift Start Time: When night shift rates begin (default: 22:00)
      - Night Shift End Time: When night shift rates end (default: 06:00)
+     - Afternoon Shift Start Time: When afternoon shift rates begin (default: 14:00)
+     - Afternoon Shift End Time: When afternoon shift rates end (default: 22:00)
      - Extended Shift Hours: Hours before extended shift overtime applies (default: 10)
    - **Award Features** (Check boxes to enable and configure):
      - ☑ **Sleepovers Included**: Enable if award includes sleepover shifts
@@ -91,6 +95,9 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
    - **Clear Awards Data** button: Removes all awards and reloads defaults
 
 4. **Import/Export Configuration**:
+   - **Download Defaults Configuration**:
+     - Downloads a single JSON file containing awards, tax rates, and HELP debt thresholds
+     - Can be used as default configuration files for the application
    - **Complete Configuration**:
      - Download: Saves awards, tax rates, HELP rates, calculator data, shifts, and settings
      - Upload: Restores complete configuration from JSON file
@@ -144,37 +151,6 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 - (continues with gradual increases)
 - Above $151,200: 10%
 
-### Using the Defaults Editor
-
-The Defaults Editor (`defaults-editor.html`) is a separate tool for creating JSON configuration files that can be used as default settings.
-
-1. Open `defaults-editor.html` in your web browser
-
-#### Awards Editor
-
-1. **Load Current Awards**: Import awards from main application
-2. **Add New Award**: Create a new award template
-3. **Edit Award Properties**:
-   - All fields work the same as in main app
-   - Saturday and Sunday rates are separate fields
-   - Changes automatically update JSON output
-4. **Download Awards JSON**: Save as `default-awards.json`
-5. **Copy to Clipboard**: Copy JSON for manual use
-
-#### Tax Rates Editor
-
-1. **Set Financial Year**: Enter year (e.g., "2024-2025")
-2. **Load Current Tax Rates**: Import from main application
-3. **Add/Edit Brackets**: Configure tax brackets
-4. **Download Tax JSON**: Save as `default-tax-rates.json`
-
-#### HELP Debt Editor
-
-1. **Set Financial Year**: Enter year
-2. **Load Current HELP Rates**: Import from main application
-3. **Add/Edit Thresholds**: Configure HELP thresholds
-4. **Download HELP JSON**: Save as `default-help-rates.json`
-
 ### Using Default Configuration Files
 
 The main application can load default configurations from JSON files if they exist in the same directory as `index.html`. This allows you to customize the default values without modifying the code.
@@ -188,11 +164,12 @@ The main application can load default configurations from JSON files if they exi
 3. **Hardcoded Defaults** (lowest priority) - Built-in fallback values
 
 **To use custom defaults:**
-1. Use the Defaults Editor to create your configuration
-2. Download the JSON files
-3. Place them in the same directory as `index.html`
-4. Clear your browser's localStorage (or use a new browser/incognito mode)
-5. Reload the page - your custom defaults will be loaded
+1. Configure your awards, tax rates, and HELP debt thresholds in the Admin Settings tab
+2. Click "Download Defaults Configuration" to save the configuration
+3. Place the downloaded JSON file in the same directory as `index.html`
+4. Rename it to match the expected default file names (see below)
+5. Clear your browser's localStorage (or use a new browser/incognito mode)
+6. Reload the page - your custom defaults will be loaded
 
 **Example files are provided:**
 - `default-awards.json.example`

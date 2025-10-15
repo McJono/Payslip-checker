@@ -468,11 +468,14 @@ function addAward() {
     const saturdayRate = parseFloat(document.getElementById('saturdayRate').value);
     const sundayRate = parseFloat(document.getElementById('sundayRate').value);
     const nightShiftRate = parseFloat(document.getElementById('nightShiftRate').value);
+    const afternoonShiftRate = parseFloat(document.getElementById('afternoonShiftRate').value);
     const maxDailyHours = parseFloat(document.getElementById('maxDailyHours').value);
     const minBreakHours = parseFloat(document.getElementById('minBreakHours').value);
     const maxWeeklyHours = parseFloat(document.getElementById('maxWeeklyHours').value);
     const nightShiftStart = document.getElementById('nightShiftStart').value;
     const nightShiftEnd = document.getElementById('nightShiftEnd').value;
+    const afternoonShiftStart = document.getElementById('afternoonShiftStart').value;
+    const afternoonShiftEnd = document.getElementById('afternoonShiftEnd').value;
     const extendedShiftHours = parseFloat(document.getElementById('extendedShiftHours').value);
     const hasSleepover = document.getElementById('hasSleepover').checked;
     const sleeperRate = parseFloat(document.getElementById('sleeperRate').value);
@@ -511,11 +514,14 @@ function addAward() {
         saturdayRate: saturdayRate,
         sundayRate: sundayRate,
         nightShiftRate: nightShiftRate,
+        afternoonShiftRate: afternoonShiftRate || 1.15,
         maxDailyHours: maxDailyHours || 8,
         minBreakHours: minBreakHours || 10,
         maxWeeklyHours: maxWeeklyHours || 38,
         nightShiftStart: nightShiftStart || '22:00',
         nightShiftEnd: nightShiftEnd || '06:00',
+        afternoonShiftStart: afternoonShiftStart || '14:00',
+        afternoonShiftEnd: afternoonShiftEnd || '22:00',
         extendedShiftHours: extendedShiftHours || 10,
         hasSleepover: hasSleepover,
         sleeperRate: sleeperRate || 0,
@@ -542,11 +548,14 @@ function addAward() {
     document.getElementById('saturdayRate').value = '1.5';
     document.getElementById('sundayRate').value = '2.0';
     document.getElementById('nightShiftRate').value = '1.25';
+    document.getElementById('afternoonShiftRate').value = '1.15';
     document.getElementById('maxDailyHours').value = '8';
     document.getElementById('minBreakHours').value = '10';
     document.getElementById('maxWeeklyHours').value = '38';
     document.getElementById('nightShiftStart').value = '22:00';
     document.getElementById('nightShiftEnd').value = '06:00';
+    document.getElementById('afternoonShiftStart').value = '14:00';
+    document.getElementById('afternoonShiftEnd').value = '22:00';
     document.getElementById('extendedShiftHours').value = '10';
     document.getElementById('hasSleepover').checked = false;
     document.getElementById('sleeperRate').value = '0';
@@ -680,6 +689,26 @@ function downloadConfiguration() {
     const dataStr = JSON.stringify(configuration, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     const exportFileDefaultName = 'payslip-configuration.json';
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+}
+
+// Download defaults configuration (awards, tax rates, HELP rates only)
+function downloadDefaultsConfiguration() {
+    const defaultsConfig = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        awards: awards,
+        taxBracketsByYear: taxBracketsByYear,
+        helpThresholdsByYear: helpThresholdsByYear
+    };
+    
+    const dataStr = JSON.stringify(defaultsConfig, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'payslip-defaults.json';
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
