@@ -259,6 +259,10 @@
                             <label for="nightShiftRate">Night Shift Rate (x):</label>
                             <input type="number" id="nightShiftRate" class="form-control" step="0.01" min="0" value="1.25">
                         </div>
+                        <div>
+                            <label for="afternoonShiftRate">Afternoon Shift Rate (x):</label>
+                            <input type="number" id="afternoonShiftRate" class="form-control" step="0.01" min="0" value="1.15">
+                        </div>
                     </div>
                 </div>
 
@@ -298,6 +302,14 @@
                         <div>
                             <label for="nightShiftEnd">Night Shift End Time:</label>
                             <input type="time" id="nightShiftEnd" class="form-control" value="06:00">
+                        </div>
+                        <div>
+                            <label for="afternoonShiftStart">Afternoon Shift Start Time:</label>
+                            <input type="time" id="afternoonShiftStart" class="form-control" value="14:00">
+                        </div>
+                        <div>
+                            <label for="afternoonShiftEnd">Afternoon Shift End Time:</label>
+                            <input type="time" id="afternoonShiftEnd" class="form-control" value="22:00">
                         </div>
                         <div>
                             <label for="extendedShiftHours">Extended Shift Hours (before overtime):</label>
@@ -401,6 +413,12 @@
                 </div>
 
                 <div class="form-group">
+                    <h3>Download Defaults Configuration</h3>
+                    <p class="info-text">Download default configuration file containing awards, tax rates, and HELP debt thresholds (for use as default-*.json files).</p>
+                    <button onclick="downloadDefaultsConfiguration()" class="btn btn-primary">Download Defaults Configuration (JSON)</button>
+                </div>
+
+                <div class="form-group">
                     <h3>Import/Export Configuration</h3>
                     <p class="info-text">Save and restore your complete configuration including awards, tax rates, HELP rates, calculator data, shifts, and settings.</p>
                     <button onclick="downloadConfiguration()" class="btn btn-primary">Download Complete Configuration (JSON)</button>
@@ -461,7 +479,6 @@
         <footer>
             <p>Payslip Checker - Australian Tax and HELP Debt Calculator</p>
             <p class="disclaimer">This calculator provides estimates only. Please consult with a tax professional for accurate calculations.</p>
-            <p><a href="defaults-editor.html" style="color: #667eea; text-decoration: underline;">Open Defaults Editor</a></p>
         </footer>
     </div>
 
