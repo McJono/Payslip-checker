@@ -1341,7 +1341,8 @@ function updateHoursAwardDropdown() {
         select.value = currentValue;
     }
     
-    // Add event listener for award changes to update sleepover agreement visibility
+    // Remove and add event listener to avoid duplicates
+    select.removeEventListener('change', updateSleeperAgreementVisibility);
     select.addEventListener('change', updateSleeperAgreementVisibility);
 }
 
@@ -1370,13 +1371,9 @@ function updateSleeperAgreementVisibility() {
         const isSleepover = sleeperSelect.value === 'true';
         agreementSection.style.display = (showSleeperAgreement && isSleepover) ? 'block' : 'none';
         
-        // Add event listener to sleepover select if not already added
-        if (!sleeperSelect.dataset.listenerAdded) {
-            sleeperSelect.addEventListener('change', function() {
-                updateSleeperAgreementVisibility();
-            });
-            sleeperSelect.dataset.listenerAdded = 'true';
-        }
+        // Remove and add event listener to avoid duplicates
+        sleeperSelect.removeEventListener('change', updateSleeperAgreementVisibility);
+        sleeperSelect.addEventListener('change', updateSleeperAgreementVisibility);
     });
 }
 
@@ -1702,7 +1699,8 @@ function calculateHours() {
                     message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). This shift may qualify for broken shift penalties.`
                 });
                 
-                // Track broken shift hours (the entire current shift is considered broken)
+                // Track broken shift hours (informational only - not added to total since hours are already counted in other categories)
+                // This tracks which shifts violate the minimum break requirement
                 totalBrokenShiftHours += currentShift.hours;
             }
         }
