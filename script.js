@@ -101,14 +101,17 @@ async function loadData() {
                     saturdayRate: 1.5,
                     sundayRate: 2.0,
                     nightShiftRate: 1.25,
+                    afternoonShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
                     maxWeeklyHours: 38,
                     nightShiftStart: '22:00',
                     nightShiftEnd: '06:00',
-                    extendedShiftHours: 10,
+                    afternoonShiftStart: '14:00',
+                    afternoonShiftEnd: '22:00',
                     hasSleepover: false,
                     sleeperRate: 0,
+                    minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
                     mealAllowance2: 0,
@@ -126,14 +129,17 @@ async function loadData() {
                     saturdayRate: 1.5,
                     sundayRate: 1.75,
                     nightShiftRate: 1.15,
+                    afternoonShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
                     maxWeeklyHours: 38,
                     nightShiftStart: '22:00',
                     nightShiftEnd: '06:00',
-                    extendedShiftHours: 10,
+                    afternoonShiftStart: '14:00',
+                    afternoonShiftEnd: '22:00',
                     hasSleepover: false,
                     sleeperRate: 0,
+                    minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
                     mealAllowance2: 0,
@@ -151,14 +157,17 @@ async function loadData() {
                     saturdayRate: 1.5,
                     sundayRate: 2.0,
                     nightShiftRate: 1.3,
+                    afternoonShiftRate: 1.15,
                     maxDailyHours: 8,
                     minBreakHours: 10,
                     maxWeeklyHours: 38,
                     nightShiftStart: '22:00',
                     nightShiftEnd: '06:00',
-                    extendedShiftHours: 10,
+                    afternoonShiftStart: '14:00',
+                    afternoonShiftEnd: '22:00',
                     hasSleepover: false,
                     sleeperRate: 0,
+                    minBreakHoursSleepover: 8,
                     mealAllowance1: 0,
                     mealAllowance1Hours: 5,
                     mealAllowance2: 0,
@@ -476,9 +485,9 @@ function addAward() {
     const nightShiftEnd = document.getElementById('nightShiftEnd').value;
     const afternoonShiftStart = document.getElementById('afternoonShiftStart').value;
     const afternoonShiftEnd = document.getElementById('afternoonShiftEnd').value;
-    const extendedShiftHours = parseFloat(document.getElementById('extendedShiftHours').value);
     const hasSleepover = document.getElementById('hasSleepover').checked;
     const sleeperRate = parseFloat(document.getElementById('sleeperRate').value);
+    const minBreakHoursSleepover = parseFloat(document.getElementById('minBreakHoursSleepover').value);
     const mealAllowance1 = parseFloat(document.getElementById('mealAllowance1').value);
     const mealAllowance1Hours = parseFloat(document.getElementById('mealAllowance1Hours').value);
     const mealAllowance2 = parseFloat(document.getElementById('mealAllowance2').value);
@@ -522,9 +531,9 @@ function addAward() {
         nightShiftEnd: nightShiftEnd || '06:00',
         afternoonShiftStart: afternoonShiftStart || '14:00',
         afternoonShiftEnd: afternoonShiftEnd || '22:00',
-        extendedShiftHours: extendedShiftHours || 10,
         hasSleepover: hasSleepover,
         sleeperRate: sleeperRate || 0,
+        minBreakHoursSleepover: minBreakHoursSleepover || 8,
         mealAllowance1: mealAllowance1 || 0,
         mealAllowance1Hours: mealAllowance1Hours || 5,
         mealAllowance2: mealAllowance2 || 0,
@@ -556,9 +565,9 @@ function addAward() {
     document.getElementById('nightShiftEnd').value = '06:00';
     document.getElementById('afternoonShiftStart').value = '14:00';
     document.getElementById('afternoonShiftEnd').value = '22:00';
-    document.getElementById('extendedShiftHours').value = '10';
     document.getElementById('hasSleepover').checked = false;
     document.getElementById('sleeperRate').value = '0';
+    document.getElementById('minBreakHoursSleepover').value = '8';
     document.getElementById('mealAllowance1').value = '0';
     document.getElementById('mealAllowance1Hours').value = '5';
     document.getElementById('mealAllowance2').value = '0';
