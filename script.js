@@ -1566,20 +1566,8 @@ function calculateHours() {
             const [nightStartHour, nightStartMin] = nightStart.split(':').map(Number);
             const [nightEndHour, nightEndMin] = nightEnd.split(':').map(Number);
             
-            // Check if shift ends within night shift timeframe
-            let endsInNightShift = false;
-            if (nightStartHour > nightEndHour) {
-                // Night shift wraps around midnight
-                endsInNightShift = (endHour > nightStartHour || endHour < nightEndHour || 
-                              (endHour === nightStartHour && endMinute >= nightStartMin) ||
-                              (endHour === nightEndHour && endMinute <= nightEndMin));
-            } else {
-                // Night shift doesn't wrap
-                endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute >= nightStartMin)) &&
-                              (endHour < nightEndHour || (endHour === nightEndHour && endMinute <= nightEndMin)));
-            }
-            
             // Check if shift ends within afternoon shift timeframe
+            // Priority: Check afternoon shift BEFORE night shift to handle overlapping boundaries correctly
             let endsInAfternoonShift = false;
             if (afternoonStartHour > afternoonEndHour) {
                 // Afternoon shift wraps around midnight
@@ -1592,13 +1580,27 @@ function calculateHours() {
                               (endHour < afternoonEndHour || (endHour === afternoonEndHour && endMinute <= afternoonEndMin)));
             }
             
-            // Determine shift rate based on end time
-            if (endsInNightShift) {
-                // Entire shift is paid at night shift rate
-                nightShiftHours = shiftHours;
-            } else if (endsInAfternoonShift) {
+            // Check if shift ends within night shift timeframe
+            // Use < for start boundary to avoid overlap with afternoon shift end
+            let endsInNightShift = false;
+            if (nightStartHour > nightEndHour) {
+                // Night shift wraps around midnight
+                endsInNightShift = (endHour > nightStartHour || endHour < nightEndHour || 
+                              (endHour === nightStartHour && endMinute > nightStartMin) ||
+                              (endHour === nightEndHour && endMinute <= nightEndMin));
+            } else {
+                // Night shift doesn't wrap
+                endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute > nightStartMin)) &&
+                              (endHour < nightEndHour || (endHour === nightEndHour && endMinute <= nightEndMin)));
+            }
+            
+            // Determine shift rate based on end time - check afternoon FIRST
+            if (endsInAfternoonShift) {
                 // Entire shift is paid at afternoon shift rate
                 afternoonHours = shiftHours;
+            } else if (endsInNightShift) {
+                // Entire shift is paid at night shift rate
+                nightShiftHours = shiftHours;
             } else {
                 // Normal shift - check for daily overtime
                 const maxDailyHours = award.maxDailyHours || 8;
