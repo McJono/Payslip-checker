@@ -509,6 +509,184 @@
         </footer>
     </div>
 
+    <!-- Award Edit Modal -->
+    <div id="awardEditModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Award</h2>
+                <span class="close" onclick="closeAwardModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editAwardId">
+                
+                <div class="form-group">
+                    <label for="editAwardName">Award Name:</label>
+                    <input type="text" id="editAwardName" class="form-control" placeholder="e.g., Retail Award">
+                </div>
+
+                <div class="form-group">
+                    <label class="tooltip-label">Rate Multipliers:
+                        <span class="tooltip-text">Define pay rate multipliers for different work conditions. Normal rate is 1.0 (base pay). Other rates are multiplied by the base hourly rate.</span>
+                    </label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="editNormalRate">Normal Rate:</label>
+                            <input type="number" id="editNormalRate" class="form-control" step="0.01" min="0" value="1.0">
+                        </div>
+                        <div>
+                            <label for="editSaturdayRate">Saturday Rate (x):</label>
+                            <input type="number" id="editSaturdayRate" class="form-control" step="0.01" min="0" value="1.5">
+                        </div>
+                        <div>
+                            <label for="editSundayRate">Sunday Rate (x):</label>
+                            <input type="number" id="editSundayRate" class="form-control" step="0.01" min="0" value="2.0">
+                        </div>
+                        <div>
+                            <label for="editNightShiftRate">Night Shift Rate (x):</label>
+                            <input type="number" id="editNightShiftRate" class="form-control" step="0.01" min="0" value="1.25">
+                        </div>
+                        <div>
+                            <label for="editAfternoonShiftRate">Afternoon Shift Rate (x):</label>
+                            <input type="number" id="editAfternoonShiftRate" class="form-control" step="0.01" min="0" value="1.15">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="tooltip-label">Overtime Rules:
+                        <span class="tooltip-text">Configure when overtime rates apply and shift constraints.</span>
+                    </label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="editMaxDailyHours">Max Daily Hours (before overtime):</label>
+                            <input type="number" id="editMaxDailyHours" class="form-control" step="0.25" min="0" value="8">
+                        </div>
+                        <div>
+                            <label for="editOvertimeRate">Overtime Rate 1 (x):</label>
+                            <input type="number" id="editOvertimeRate" class="form-control" step="0.01" min="0" value="1.5">
+                        </div>
+                        <div>
+                            <label for="editOvertime2Hours">After how many hours (Overtime 2):</label>
+                            <input type="number" id="editOvertime2Hours" class="form-control" step="0.25" min="0" value="10">
+                        </div>
+                        <div>
+                            <label for="editOvertime2Rate">Overtime Rate 2 (x):</label>
+                            <input type="number" id="editOvertime2Rate" class="form-control" step="0.01" min="0" value="2.0">
+                        </div>
+                        <div>
+                            <label for="editMinBreakHours">Min Break Between Shifts (hours):</label>
+                            <input type="number" id="editMinBreakHours" class="form-control" step="0.25" min="0" value="10">
+                        </div>
+                        <div>
+                            <label for="editMaxWeeklyHours">Max Weekly Hours (before overtime):</label>
+                            <input type="number" id="editMaxWeeklyHours" class="form-control" step="0.25" min="0" value="38">
+                        </div>
+                        <div>
+                            <label for="editNightShiftStart">Night Shift Start Time:</label>
+                            <input type="time" id="editNightShiftStart" class="form-control" value="22:00">
+                        </div>
+                        <div>
+                            <label for="editNightShiftEnd">Night Shift End Time:</label>
+                            <input type="time" id="editNightShiftEnd" class="form-control" value="06:00">
+                        </div>
+                        <div>
+                            <label for="editAfternoonShiftStart">Afternoon Shift Start Time:</label>
+                            <input type="time" id="editAfternoonShiftStart" class="form-control" value="14:00">
+                        </div>
+                        <div>
+                            <label for="editAfternoonShiftEnd">Afternoon Shift End Time:</label>
+                            <input type="time" id="editAfternoonShiftEnd" class="form-control" value="22:00">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="tooltip-label">Award Features:
+                        <span class="tooltip-text">Enable specific features for this award.</span>
+                    </label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="editHasSleepover">
+                                <input type="checkbox" id="editHasSleepover" onchange="toggleEditSleeperSection()"> Sleepovers Included
+                            </label>
+                        </div>
+                        <div>
+                            <label for="editHasMealAllowances">
+                                <input type="checkbox" id="editHasMealAllowances" onchange="toggleEditMealAllowancesSection()"> Meal Allowances
+                            </label>
+                        </div>
+                        <div>
+                            <label for="editHasFirstAid">
+                                <input type="checkbox" id="editHasFirstAid" onchange="toggleEditFirstAidSection()"> First Aid Allowance
+                            </label>
+                        </div>
+                        <div>
+                            <label for="editHasCustomAllowances">
+                                <input type="checkbox" id="editHasCustomAllowances" onchange="toggleEditCustomAllowancesSection()"> Custom Allowances
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editSleeperSection" class="form-group" style="display: none;">
+                    <label class="tooltip-label">Sleepover Settings:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="editSleeperRate">Sleepover Rate ($/shift):</label>
+                            <input type="number" id="editSleeperRate" class="form-control" step="0.01" min="0" value="0">
+                        </div>
+                        <div>
+                            <label for="editMinBreakHoursSleepover">Min Break Between Sleepovers (hours):</label>
+                            <input type="number" id="editMinBreakHoursSleepover" class="form-control" step="0.25" min="0" value="8">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editMealAllowancesSection" class="form-group" style="display: none;">
+                    <label class="tooltip-label">Meal Allowances:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="editMealAllowance1">Meal Allowance ($/occurrence):</label>
+                            <input type="number" id="editMealAllowance1" class="form-control" step="0.01" min="0" value="0">
+                        </div>
+                        <div>
+                            <label for="editMealAllowance1Hours">After how many hours:</label>
+                            <input type="number" id="editMealAllowance1Hours" class="form-control" step="0.25" min="0" value="5">
+                        </div>
+                        <div>
+                            <label for="editMealAllowance2Hours">2nd Meal Allowance - After how many hours:</label>
+                            <input type="number" id="editMealAllowance2Hours" class="form-control" step="0.25" min="0" value="10">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editFirstAidSection" class="form-group" style="display: none;">
+                    <label class="tooltip-label">First Aid Settings:</label>
+                    <div class="rate-grid">
+                        <div>
+                            <label for="editFirstAidAllowance">First Aid Allowance ($/hour):</label>
+                            <input type="number" id="editFirstAidAllowance" class="form-control" step="0.01" min="0" value="0">
+                        </div>
+                        <div>
+                            <label for="editFirstAidMaxAmount">Maximum Amount ($ per period):</label>
+                            <input type="number" id="editFirstAidMaxAmount" class="form-control" step="0.01" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editCustomAllowancesSection" class="form-group" style="display: none;">
+                    <label class="tooltip-label">Custom Allowances:</label>
+                    <div id="editCustomAllowancesContainer"></div>
+                    <button onclick="addEditCustomAllowanceField()" class="btn btn-secondary">Add Custom Allowance</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveEditedAward()" class="btn btn-primary">Save Changes</button>
+                <button onclick="closeAwardModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

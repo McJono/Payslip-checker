@@ -871,6 +871,208 @@ function deleteAward(id) {
     }
 }
 
+// Award editing functions
+let editCustomAllowanceCount = 0;
+
+function editAward(id) {
+    const award = awards.find(a => a.id === id);
+    if (!award) {
+        alert('Award not found');
+        return;
+    }
+    
+    // Populate modal fields
+    document.getElementById('editAwardId').value = award.id;
+    document.getElementById('editAwardName').value = award.name;
+    document.getElementById('editNormalRate').value = award.normalRate;
+    document.getElementById('editOvertimeRate').value = award.overtimeRate;
+    document.getElementById('editOvertime2Hours').value = award.overtime2Hours || 10;
+    document.getElementById('editOvertime2Rate').value = award.overtime2Rate || 2.0;
+    document.getElementById('editSaturdayRate').value = award.saturdayRate !== undefined ? award.saturdayRate : award.weekendRate || 1.5;
+    document.getElementById('editSundayRate').value = award.sundayRate !== undefined ? award.sundayRate : award.weekendRate || 2.0;
+    document.getElementById('editNightShiftRate').value = award.nightShiftRate;
+    document.getElementById('editAfternoonShiftRate').value = award.afternoonShiftRate || 1.15;
+    document.getElementById('editMaxDailyHours').value = award.maxDailyHours || 8;
+    document.getElementById('editMinBreakHours').value = award.minBreakHours || 10;
+    document.getElementById('editMaxWeeklyHours').value = award.maxWeeklyHours || 38;
+    document.getElementById('editNightShiftStart').value = award.nightShiftStart || '22:00';
+    document.getElementById('editNightShiftEnd').value = award.nightShiftEnd || '06:00';
+    document.getElementById('editAfternoonShiftStart').value = award.afternoonShiftStart || '14:00';
+    document.getElementById('editAfternoonShiftEnd').value = award.afternoonShiftEnd || '22:00';
+    
+    // Set checkboxes and show/hide sections
+    document.getElementById('editHasSleepover').checked = award.hasSleepover || false;
+    document.getElementById('editHasMealAllowances').checked = (award.mealAllowance1 && award.mealAllowance1 > 0) || false;
+    document.getElementById('editHasFirstAid').checked = (award.firstAidAllowance && award.firstAidAllowance > 0) || false;
+    document.getElementById('editHasCustomAllowances').checked = (award.customAllowances && award.customAllowances.length > 0) || false;
+    
+    toggleEditSleeperSection();
+    toggleEditMealAllowancesSection();
+    toggleEditFirstAidSection();
+    toggleEditCustomAllowancesSection();
+    
+    // Populate sleepover settings
+    document.getElementById('editSleeperRate').value = award.sleeperRate || 0;
+    document.getElementById('editMinBreakHoursSleepover').value = award.minBreakHoursSleepover || 8;
+    
+    // Populate meal allowances
+    document.getElementById('editMealAllowance1').value = award.mealAllowance1 || 0;
+    document.getElementById('editMealAllowance1Hours').value = award.mealAllowance1Hours || 5;
+    document.getElementById('editMealAllowance2Hours').value = award.mealAllowance2Hours || 10;
+    
+    // Populate first aid
+    document.getElementById('editFirstAidAllowance').value = award.firstAidAllowance || 0;
+    document.getElementById('editFirstAidMaxAmount').value = award.firstAidMaxAmount || 0;
+    
+    // Populate custom allowances
+    const container = document.getElementById('editCustomAllowancesContainer');
+    container.innerHTML = '';
+    editCustomAllowanceCount = 0;
+    if (award.customAllowances && award.customAllowances.length > 0) {
+        award.customAllowances.forEach(allowance => {
+            const div = document.createElement('div');
+            div.className = 'custom-allowance-item';
+            div.style.display = 'grid';
+            div.style.gridTemplateColumns = '1fr 1fr auto';
+            div.style.gap = '10px';
+            div.style.marginBottom = '10px';
+            div.innerHTML = `
+                <input type="text" class="form-control custom-allowance-name" placeholder="Allowance name" value="${allowance.name}">
+                <input type="number" class="form-control custom-allowance-amount" step="0.01" min="0" placeholder="Amount ($)" value="${allowance.amount}">
+                <button onclick="this.parentElement.remove()" class="btn btn-danger">Remove</button>
+            `;
+            container.appendChild(div);
+            editCustomAllowanceCount++;
+        });
+    }
+    
+    // Show modal
+    document.getElementById('awardEditModal').style.display = 'block';
+}
+
+function closeAwardModal() {
+    document.getElementById('awardEditModal').style.display = 'none';
+}
+
+function saveEditedAward() {
+    const id = parseInt(document.getElementById('editAwardId').value);
+    const name = document.getElementById('editAwardName').value.trim();
+    
+    if (!name) {
+        alert('Please enter an award name');
+        return;
+    }
+    
+    // Collect custom allowances
+    const customAllowances = [];
+    const customAllowanceInputs = document.querySelectorAll('#editCustomAllowancesContainer .custom-allowance-item');
+    customAllowanceInputs.forEach(item => {
+        const nameInput = item.querySelector('.custom-allowance-name');
+        const amountInput = item.querySelector('.custom-allowance-amount');
+        if (nameInput && amountInput && nameInput.value.trim()) {
+            customAllowances.push({
+                name: nameInput.value.trim(),
+                amount: parseFloat(amountInput.value) || 0
+            });
+        }
+    });
+    
+    // Update award object
+    const updatedAward = {
+        id: id,
+        name: name,
+        normalRate: parseFloat(document.getElementById('editNormalRate').value),
+        overtimeRate: parseFloat(document.getElementById('editOvertimeRate').value),
+        overtime2Hours: parseFloat(document.getElementById('editOvertime2Hours').value) || 10,
+        overtime2Rate: parseFloat(document.getElementById('editOvertime2Rate').value) || 2.0,
+        saturdayRate: parseFloat(document.getElementById('editSaturdayRate').value),
+        sundayRate: parseFloat(document.getElementById('editSundayRate').value),
+        nightShiftRate: parseFloat(document.getElementById('editNightShiftRate').value),
+        afternoonShiftRate: parseFloat(document.getElementById('editAfternoonShiftRate').value) || 1.15,
+        maxDailyHours: parseFloat(document.getElementById('editMaxDailyHours').value) || 8,
+        minBreakHours: parseFloat(document.getElementById('editMinBreakHours').value) || 10,
+        maxWeeklyHours: parseFloat(document.getElementById('editMaxWeeklyHours').value) || 38,
+        nightShiftStart: document.getElementById('editNightShiftStart').value || '22:00',
+        nightShiftEnd: document.getElementById('editNightShiftEnd').value || '06:00',
+        afternoonShiftStart: document.getElementById('editAfternoonShiftStart').value || '14:00',
+        afternoonShiftEnd: document.getElementById('editAfternoonShiftEnd').value || '22:00',
+        hasSleepover: document.getElementById('editHasSleepover').checked,
+        sleeperRate: parseFloat(document.getElementById('editSleeperRate').value) || 0,
+        minBreakHoursSleepover: parseFloat(document.getElementById('editMinBreakHoursSleepover').value) || 8,
+        mealAllowance1: parseFloat(document.getElementById('editMealAllowance1').value) || 0,
+        mealAllowance1Hours: parseFloat(document.getElementById('editMealAllowance1Hours').value) || 5,
+        mealAllowance2Hours: parseFloat(document.getElementById('editMealAllowance2Hours').value) || 10,
+        firstAidAllowance: parseFloat(document.getElementById('editFirstAidAllowance').value) || 0,
+        firstAidMaxAmount: parseFloat(document.getElementById('editFirstAidMaxAmount').value) || 0,
+        customAllowances: customAllowances
+    };
+    
+    // Find and update award in the array
+    const index = awards.findIndex(a => a.id === id);
+    if (index !== -1) {
+        awards[index] = updatedAward;
+        saveAwards();
+        renderAwardsList();
+        updateAwardDropdown();
+        updateHoursAwardDropdown();
+        closeAwardModal();
+        alert('Award updated successfully!');
+    } else {
+        alert('Error: Award not found');
+    }
+}
+
+function toggleEditSleeperSection() {
+    const checkbox = document.getElementById('editHasSleepover');
+    const section = document.getElementById('editSleeperSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleEditMealAllowancesSection() {
+    const checkbox = document.getElementById('editHasMealAllowances');
+    const section = document.getElementById('editMealAllowancesSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleEditFirstAidSection() {
+    const checkbox = document.getElementById('editHasFirstAid');
+    const section = document.getElementById('editFirstAidSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleEditCustomAllowancesSection() {
+    const checkbox = document.getElementById('editHasCustomAllowances');
+    const section = document.getElementById('editCustomAllowancesSection');
+    section.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function addEditCustomAllowanceField() {
+    const container = document.getElementById('editCustomAllowancesContainer');
+    const index = editCustomAllowanceCount++;
+    
+    const div = document.createElement('div');
+    div.className = 'custom-allowance-item';
+    div.style.display = 'grid';
+    div.style.gridTemplateColumns = '1fr 1fr auto';
+    div.style.gap = '10px';
+    div.style.marginBottom = '10px';
+    div.innerHTML = `
+        <input type="text" class="form-control custom-allowance-name" placeholder="Allowance name">
+        <input type="number" class="form-control custom-allowance-amount" step="0.01" min="0" placeholder="Amount ($)">
+        <button onclick="this.parentElement.remove()" class="btn btn-danger">Remove</button>
+    `;
+    container.appendChild(div);
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('awardEditModal');
+    if (event.target == modal) {
+        closeAwardModal();
+    }
+}
+
+
 function renderAwardsList() {
     const container = document.getElementById('awardsList');
     
@@ -890,7 +1092,10 @@ function renderAwardsList() {
                 <h4>${award.name}</h4>
                 <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} (after ${award.maxDailyHours}h) | Overtime 2: x${award.overtime2Rate || 2.0} (after ${award.overtime2Hours || 10}h) | Saturday: x${saturdayRate} | Sunday: x${sundayRate} | Night: x${award.nightShiftRate}</p>
             </div>
-            <button onclick="deleteAward(${award.id})" class="btn btn-danger">Delete</button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="editAward(${award.id})" class="btn btn-secondary">Edit</button>
+                <button onclick="deleteAward(${award.id})" class="btn btn-danger">Delete</button>
+            </div>
         </div>
         `;
     }).join('');
