@@ -2005,9 +2005,14 @@ function calculateHours() {
             
             // Validate that sleepover period is within shift bounds
             if (sleeperStart < start || sleeperEnd > end) {
+                const usingDefaults = !sleeperStartTime && !sleeperEndTime;
+                const warningMessage = usingDefaults 
+                    ? `Default sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Consider specifying custom sleepover times.`
+                    : `Sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Please check your times.`;
+                
                 allWarnings.push({
                     title: `Sleepover Period Warning - Shift ${i + 1}`,
-                    message: `Sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Please check your times.`
+                    message: warningMessage
                 });
                 // Reset to standard calculation
                 actualWorkHours = shiftHours;
