@@ -61,9 +61,9 @@ The Hours Calculator helps you track actual hours worked across multiple shifts 
    - **Shift Start Date and Time**: When the shift begins
    - **Shift End Date and Time**: When the shift ends
    - **Is this a sleepover shift?**: Select "Yes" if applicable
-     - **Sleepover Start Time (optional)**: When the sleepover period begins within the shift
-     - **Sleepover End Time (optional)**: When the sleepover period ends within the shift
-     - Leave sleepover times empty if the sleepover is a standard 8-hour period after the work shift
+     - **Sleepover Start Time (optional)**: When the sleepover period begins within the shift (defaults to 22:00 if not specified)
+     - **Sleepover End Time (optional)**: When the sleepover period ends within the shift (defaults to 06:00 if not specified)
+     - If sleepover is selected but times are not specified, the system presumes sleepover hours are 22:00-06:00
    - **Sleepover Agreement**: Check if you have a signed agreement for 8-hour breaks after sleepovers
 4. Click "Add Another Shift" to add more shifts
 5. Click "Calculate Hours" to see the breakdown
