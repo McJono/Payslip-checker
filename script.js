@@ -1839,7 +1839,7 @@ function calculateHours() {
             }
             
             // Check if shift ends within night shift timeframe
-            // Use >= for start boundary and <= for end boundary to include exact boundary times
+            // Use >= for start boundary to include exact boundary times (end boundary already uses <=)
             let endsInNightShift = false;
             if (nightStartHour > nightEndHour) {
                 // Night shift wraps around midnight
