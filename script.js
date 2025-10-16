@@ -1924,11 +1924,15 @@ function calculateHours() {
                 }
             } else if (breakTime < minBreak && breakTime >= 0) {
                 // This is a broken shift (insufficient break but not consecutive)
-                brokenShiftIndices.add(i);
-                allWarnings.push({
-                    title: `Broken Shift Detected - Shift ${currentShift.index + 1}`,
-                    message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). This shift may qualify for broken shift penalties.`
-                });
+                // Only mark current shift as broken if previous shift is not already marked as broken
+                // This ensures that only the 2nd shift in a chain of broken shifts is treated as broken
+                if (!brokenShiftIndices.has(i - 1)) {
+                    brokenShiftIndices.add(i);
+                    allWarnings.push({
+                        title: `Broken Shift Detected - Shift ${currentShift.index + 1}`,
+                        message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). This shift may qualify for broken shift penalties.`
+                    });
+                }
             }
         }
     }
@@ -2009,9 +2013,15 @@ function calculateHours() {
         // Process each consecutive shift group
         for (const group of consecutiveShiftGroups) {
             // Calculate combined hours for meal allowance eligibility
+            // For sleepover shifts, deduct 8 hours before checking eligibility
             let combinedHours = 0;
             for (const idx of group) {
-                combinedHours += shifts[idx].hours;
+                let shiftHours = shifts[idx].hours;
+                // If this is a sleepover shift, deduct 8 hours for meal allowance calculation
+                if (shifts[idx].isSleepover) {
+                    shiftHours = Math.max(0, shiftHours - 8);
+                }
+                combinedHours += shiftHours;
             }
             
             // Check for meal allowance based on combined duration
