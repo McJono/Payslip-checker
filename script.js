@@ -1839,13 +1839,14 @@ function calculateHours() {
             }
             
             // Check if shift ends within night shift timeframe
+            // Night shift is typically 22:00-06:00, but we extend the end to before 7:00 to catch early morning shifts
             // Use >= for start boundary to include exact boundary times (end boundary already uses <=)
             let endsInNightShift = false;
             if (nightStartHour > nightEndHour) {
-                // Night shift wraps around midnight
-                endsInNightShift = (endHour > nightStartHour || endHour < nightEndHour || 
-                              (endHour === nightStartHour && endMinute >= nightStartMin) ||
-                              (endHour === nightEndHour && endMinute <= nightEndMin));
+                // Night shift wraps around midnight (e.g., 22:00 to 06:00)
+                // A shift ending before 7:00 AM is still considered night shift
+                endsInNightShift = (endHour > nightStartHour || endHour < 7 || 
+                              (endHour === nightStartHour && endMinute >= nightStartMin));
             } else {
                 // Night shift doesn't wrap
                 endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute >= nightStartMin)) &&
@@ -1901,47 +1902,10 @@ function calculateHours() {
             }
         }
         
-        // Adjust for sleepover (deduct 8 hours from the calculated hours)
-        if (isSleepover) {
-            const sleeperDeduction = 8;
-            // Deduct from whichever category has hours, prioritizing in order
-            if (saturdayHours > 0) {
-                saturdayHours = Math.max(0, saturdayHours - sleeperDeduction);
-            } else if (sundayHours > 0) {
-                sundayHours = Math.max(0, sundayHours - sleeperDeduction);
-            } else if (nightShiftHours > 0) {
-                nightShiftHours = Math.max(0, nightShiftHours - sleeperDeduction);
-            } else if (afternoonHours > 0) {
-                afternoonHours = Math.max(0, afternoonHours - sleeperDeduction);
-            } else if (overtime2Hours > 0) {
-                // Deduct from overtime2 first, then overtime1, then normal
-                const remainingAfterOvertime2 = Math.max(0, overtime2Hours - sleeperDeduction);
-                const deductedFromOvertime2 = overtime2Hours - remainingAfterOvertime2;
-                overtime2Hours = remainingAfterOvertime2;
-                let remainingDeduction = sleeperDeduction - deductedFromOvertime2;
-                
-                if (remainingDeduction > 0 && overtime1Hours > 0) {
-                    const remainingAfterOvertime1 = Math.max(0, overtime1Hours - remainingDeduction);
-                    const deductedFromOvertime1 = overtime1Hours - remainingAfterOvertime1;
-                    overtime1Hours = remainingAfterOvertime1;
-                    remainingDeduction -= deductedFromOvertime1;
-                }
-                
-                if (remainingDeduction > 0) {
-                    normalHours = Math.max(0, normalHours - remainingDeduction);
-                }
-            } else if (overtime1Hours > 0) {
-                const remainingAfterOvertime1 = Math.max(0, overtime1Hours - sleeperDeduction);
-                const deductedFromOvertime1 = overtime1Hours - remainingAfterOvertime1;
-                overtime1Hours = remainingAfterOvertime1;
-                if (sleeperDeduction - deductedFromOvertime1 > 0) {
-                    normalHours = Math.max(0, normalHours - (sleeperDeduction - deductedFromOvertime1));
-                }
-            } else {
-                normalHours = Math.max(0, normalHours - sleeperDeduction);
-            }
-        }
-        
+        // NOTE: Sleepover shifts do NOT reduce working hours
+        // The sleepover is a separate 8-hour non-paid rest period AFTER the work shift
+        // It only affects break calculations, not the hours worked
+        // Working hours = actual shift duration (no deduction for sleepover)
         // Calculate adjusted total for this shift
         const adjustedShiftHours = normalHours + overtime1Hours + overtime2Hours + saturdayHours + sundayHours + afternoonHours + nightShiftHours;
         totalHours += adjustedShiftHours;
@@ -2042,19 +2006,21 @@ function calculateHours() {
     
     // Subtract broken shift hours from all categories and add to broken shift total
     // Issue #2: If a shift is treated as a broken shift, don't count those hours towards anything else
+    // IMPORTANT: Weekend and night shifts take priority over broken shift classification
     brokenShiftIndices.forEach(idx => {
         const shift = shifts[idx];
-        totalNormalHours -= shift.normalHours;
-        totalOvertime1Hours -= shift.overtime1Hours;
-        totalOvertime2Hours -= shift.overtime2Hours;
-        totalSaturdayHours -= shift.saturdayHours;
-        totalSundayHours -= shift.sundayHours;
-        totalAfternoonHours -= shift.afternoonHours;
-        totalNightShiftHours -= shift.nightShiftHours;
-        totalBrokenShiftHours += shift.hours;
-        totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours + shift.saturdayHours +
-                       shift.sundayHours + shift.afternoonHours + shift.nightShiftHours);
-        totalHours += shift.hours; // Add back the full shift hours to broken shift
+        // Only reclassify as broken shift if it's not already a weekend or night shift
+        // Weekend and night shifts maintain their classification even with insufficient breaks
+        if (shift.saturdayHours === 0 && shift.sundayHours === 0 && shift.nightShiftHours === 0) {
+            totalNormalHours -= shift.normalHours;
+            totalOvertime1Hours -= shift.overtime1Hours;
+            totalOvertime2Hours -= shift.overtime2Hours;
+            totalAfternoonHours -= shift.afternoonHours;
+            totalBrokenShiftHours += shift.hours;
+            totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours + shift.afternoonHours);
+            totalHours += shift.hours; // Add back the full shift hours to broken shift
+        }
+        // If it's a weekend or night shift, keep it in its original category despite insufficient break
     });
     
     // Issue #3: Process consecutive shift groups for combined overtime calculation
