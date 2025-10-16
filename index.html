@@ -184,10 +184,20 @@
 
                         <div class="form-group">
                             <label for="isSleepover-0">Is this a sleepover shift?</label>
-                            <select id="isSleepover-0" class="form-control shift-sleepover">
+                            <select id="isSleepover-0" class="form-control shift-sleepover" onchange="toggleSleeperDetails(0)">
                                 <option value="false">No</option>
                                 <option value="true">Yes</option>
                             </select>
+                        </div>
+
+                        <div class="form-group sleepover-details-section" id="sleeperDetails-0" style="display: none;">
+                            <label for="sleeperStartTime-0">Sleepover Start Time (optional):</label>
+                            <input type="time" id="sleeperStartTime-0" class="form-control sleepover-start-time">
+                            <small class="info-text">Leave empty if sleepover starts at shift end time</small>
+                            
+                            <label for="sleeperEndTime-0" style="margin-top: 10px;">Sleepover End Time (optional):</label>
+                            <input type="time" id="sleeperEndTime-0" class="form-control sleepover-end-time">
+                            <small class="info-text">Leave empty for standard 8-hour sleepover period</small>
                         </div>
 
                         <div class="form-group sleepover-agreement-section" id="sleeperAgreement-0" style="display: none;">
