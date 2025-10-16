@@ -1814,7 +1814,21 @@ function calculateHours() {
                 const maxDailyHours = award.maxDailyHours || 8;
                 const overtime2Threshold = award.overtime2Hours || 10;
                 
-                if (shiftHours > overtime2Threshold) {
+                // Validate that overtime2Threshold is greater than maxDailyHours
+                // If not, treat all overtime as overtime1
+                if (overtime2Threshold <= maxDailyHours) {
+                    // Invalid configuration - treat all overtime at overtime1 rate
+                    if (shiftHours > maxDailyHours) {
+                        overtime1Hours = shiftHours - maxDailyHours;
+                        normalHours = maxDailyHours;
+                        allWarnings.push({
+                            title: `Daily Overtime Detected - Shift ${i + 1}`,
+                            message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+                        });
+                    } else {
+                        normalHours = shiftHours;
+                    }
+                } else if (shiftHours > overtime2Threshold) {
                     // Shift exceeds overtime2 threshold - split into normal, overtime1, and overtime2
                     overtime2Hours = shiftHours - overtime2Threshold;
                     overtime1Hours = overtime2Threshold - maxDailyHours;
@@ -1916,6 +1930,10 @@ function calculateHours() {
     const brokenShiftIndices = new Set();
     const consecutiveShiftGroups = [];
     
+    // Add tolerance for floating point precision and minor time differences
+    // This prevents shifts that are meant to be at threshold from being incorrectly classified
+    const BREAK_TIME_TOLERANCE = 0.05; // 3 minutes tolerance
+    
     // Check for broken shifts and consecutive shifts
     if (shifts.length > 1) {
         for (let i = 1; i < shifts.length; i++) {
@@ -1938,10 +1956,6 @@ function calculateHours() {
             
             // Define what "directly after" means - very small break (e.g., 0.5 hour or less)
             const consecutiveThreshold = 0.5; // hours
-            
-            // Add tolerance for floating point precision and minor time differences
-            // This prevents shifts that are meant to be at threshold from being incorrectly classified
-            const BREAK_TIME_TOLERANCE = 0.05; // 3 minutes tolerance
             
             // Check if shifts are directly consecutive (directly after each other)
             // Use tolerance to account for minor timing differences
@@ -2018,8 +2032,22 @@ function calculateHours() {
             const maxDailyHours = award.maxDailyHours || 8;
             const overtime2Threshold = award.overtime2Hours || 10;
             
-            // Recalculate overtime for the combined shift
-            if (combinedHours > overtime2Threshold) {
+            // Validate that overtime2Threshold is greater than maxDailyHours
+            // If not, treat all overtime as overtime1
+            if (overtime2Threshold <= maxDailyHours) {
+                // Invalid configuration - treat all overtime at overtime1 rate
+                if (combinedHours > maxDailyHours) {
+                    combinedOvertime1Hours = combinedHours - maxDailyHours;
+                    combinedNormalHours = maxDailyHours;
+                    
+                    allWarnings.push({
+                        title: `Continuing Shift Overtime - Shifts ${group.map(idx => shifts[idx].index + 1).join(', ')}`,
+                        message: `Consecutive shifts treated as continuing shift. Combined duration (${combinedHours.toFixed(2)} hours) exceeds maximum daily hours (${maxDailyHours} hours).`
+                    });
+                } else {
+                    combinedNormalHours = combinedHours;
+                }
+            } else if (combinedHours > overtime2Threshold) {
                 // Combined hours exceed overtime2 threshold
                 combinedOvertime2Hours = combinedHours - overtime2Threshold;
                 combinedOvertime1Hours = overtime2Threshold - maxDailyHours;
