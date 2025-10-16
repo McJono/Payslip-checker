@@ -1823,7 +1823,68 @@ function calculateHours() {
         const totalMilliseconds = end - start;
         const shiftHours = totalMilliseconds / (1000 * 60 * 60);
         
+        // NOTE: Sleepover shifts may have work time before and after the sleepover period
+        // If sleepover start/end times are specified, calculate working hours accordingly
+        // Working hours = (sleepover start - shift start) + (shift end - sleepover end)
+        // If sleepover is selected but no times specified, presume 22:00-06:00 (default sleepover hours)
+        let actualWorkHours = shiftHours;
+        let sleeperPeriodHours = 0;
+        
+        if (isSleepover) {
+            // Use default sleepover hours (22:00-06:00) if not specified
+            // Note: If only one time is specified, that value is used with the default for the other
+            const defaultSleeperStart = '22:00';
+            const defaultSleeperEnd = '06:00';
+            const effectiveSleeperStartTime = sleeperStartTime || defaultSleeperStart;
+            const effectiveSleeperEndTime = sleeperEndTime || defaultSleeperEnd;
+            
+            // Parse sleepover times
+            const [sleeperStartHour, sleeperStartMin] = effectiveSleeperStartTime.split(':').map(Number);
+            const [sleeperEndHour, sleeperEndMin] = effectiveSleeperEndTime.split(':').map(Number);
+            
+            // Create date objects for sleepover period
+            const sleeperStart = new Date(start);
+            sleeperStart.setHours(sleeperStartHour, sleeperStartMin, 0, 0);
+            
+            // If sleepover start is before shift start, it's likely meant to be later in the shift
+            if (sleeperStart < start) {
+                sleeperStart.setDate(sleeperStart.getDate() + 1);
+            }
+            
+            const sleeperEnd = new Date(sleeperStart);
+            sleeperEnd.setHours(sleeperEndHour, sleeperEndMin, 0, 0);
+            
+            // If sleepover end is before sleepover start, it wraps to next day
+            if (sleeperEnd <= sleeperStart) {
+                sleeperEnd.setDate(sleeperEnd.getDate() + 1);
+            }
+            
+            // Calculate working hours before and after sleepover
+            const hoursBeforeSleepover = (sleeperStart - start) / (1000 * 60 * 60);
+            const hoursAfterSleepover = (end - sleeperEnd) / (1000 * 60 * 60);
+            actualWorkHours = hoursBeforeSleepover + hoursAfterSleepover;
+            sleeperPeriodHours = (sleeperEnd - sleeperStart) / (1000 * 60 * 60);
+            
+            // Validate that sleepover period is within shift bounds
+            if (sleeperStart < start || sleeperEnd > end) {
+                // Consider it "using defaults" only if both times are empty (as per requirement)
+                const usingDefaults = !sleeperStartTime && !sleeperEndTime;
+                const warningMessage = usingDefaults 
+                    ? `Default sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Consider specifying custom sleepover times.`
+                    : `Sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Please check your times.`;
+                
+                allWarnings.push({
+                    title: `Sleepover Period Warning - Shift ${i + 1}`,
+                    message: warningMessage
+                });
+                // Reset to standard calculation
+                actualWorkHours = shiftHours;
+                sleeperPeriodHours = 0;
+            }
+        }
+        
         // Calculate hours breakdown for this shift
+        // Use actualWorkHours (which accounts for sleepover periods) instead of shiftHours
         let normalHours = 0;
         let overtime1Hours = 0;
         let overtime2Hours = 0;
@@ -1841,10 +1902,10 @@ function calculateHours() {
         
         if (startDay === 6 || endDay === 6) {
             // Saturday shift
-            saturdayHours = shiftHours;
+            saturdayHours = actualWorkHours;
         } else if (startDay === 0 || endDay === 0) {
             // Sunday shift
-            sundayHours = shiftHours;
+            sundayHours = actualWorkHours;
         } else {
             // Weekday shift - check for afternoon/night shift rates
             // For sleepover shifts with specified times, use the sleepover end time for classification
@@ -1916,10 +1977,10 @@ function calculateHours() {
             // Determine shift rate based on end time - check afternoon FIRST
             if (endsInAfternoonShift) {
                 // Entire shift is paid at afternoon shift rate
-                afternoonHours = shiftHours;
+                afternoonHours = actualWorkHours;
             } else if (endsInNightShift) {
                 // Entire shift is paid at night shift rate
-                nightShiftHours = shiftHours;
+                nightShiftHours = actualWorkHours;
             } else {
                 // Normal shift - check for daily overtime
                 const maxDailyHours = award.maxDailyHours || 8;
@@ -1929,110 +1990,37 @@ function calculateHours() {
                 // If not, treat all overtime as overtime1
                 if (overtime2Threshold <= maxDailyHours) {
                     // Invalid configuration - treat all overtime at overtime1 rate
-                    if (shiftHours > maxDailyHours) {
-                        overtime1Hours = shiftHours - maxDailyHours;
+                    if (actualWorkHours > maxDailyHours) {
+                        overtime1Hours = actualWorkHours - maxDailyHours;
                         normalHours = maxDailyHours;
                         allWarnings.push({
                             title: `Daily Overtime Detected - Shift ${i + 1}`,
-                            message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+                            message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
                         });
                     } else {
-                        normalHours = shiftHours;
+                        normalHours = actualWorkHours;
                     }
-                } else if (shiftHours > overtime2Threshold) {
+                } else if (actualWorkHours > overtime2Threshold) {
                     // Shift exceeds overtime2 threshold - split into normal, overtime1, and overtime2
-                    overtime2Hours = shiftHours - overtime2Threshold;
+                    overtime2Hours = actualWorkHours - overtime2Threshold;
                     overtime1Hours = overtime2Threshold - maxDailyHours;
                     normalHours = maxDailyHours;
                     allWarnings.push({
                         title: `Daily Overtime 2 Detected - Shift ${i + 1}`,
-                        message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the overtime 2 threshold (${overtime2Threshold} hours).`
+                        message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the overtime 2 threshold (${overtime2Threshold} hours).`
                     });
-                } else if (shiftHours > maxDailyHours) {
+                } else if (actualWorkHours > maxDailyHours) {
                     // Shift exceeds maxDailyHours but not overtime2 threshold
-                    overtime1Hours = shiftHours - maxDailyHours;
+                    overtime1Hours = actualWorkHours - maxDailyHours;
                     normalHours = maxDailyHours;
                     allWarnings.push({
                         title: `Daily Overtime Detected - Shift ${i + 1}`,
-                        message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+                        message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
                     });
                 } else {
-                    normalHours = shiftHours;
+                    normalHours = actualWorkHours;
                 }
             }
-        }
-        
-        // NOTE: Sleepover shifts may have work time before and after the sleepover period
-        // If sleepover start/end times are specified, calculate working hours accordingly
-        // Working hours = (sleepover start - shift start) + (shift end - sleepover end)
-        // If sleepover is selected but no times specified, presume 22:00-06:00 (default sleepover hours)
-        let actualWorkHours = shiftHours;
-        let sleeperPeriodHours = 0;
-        
-        if (isSleepover) {
-            // Use default sleepover hours (22:00-06:00) if not specified
-            // Note: If only one time is specified, that value is used with the default for the other
-            const defaultSleeperStart = '22:00';
-            const defaultSleeperEnd = '06:00';
-            const effectiveSleeperStartTime = sleeperStartTime || defaultSleeperStart;
-            const effectiveSleeperEndTime = sleeperEndTime || defaultSleeperEnd;
-            
-            // Parse sleepover times
-            const [sleeperStartHour, sleeperStartMin] = effectiveSleeperStartTime.split(':').map(Number);
-            const [sleeperEndHour, sleeperEndMin] = effectiveSleeperEndTime.split(':').map(Number);
-            
-            // Create date objects for sleepover period
-            const sleeperStart = new Date(start);
-            sleeperStart.setHours(sleeperStartHour, sleeperStartMin, 0, 0);
-            
-            // If sleepover start is before shift start, it's likely meant to be later in the shift
-            if (sleeperStart < start) {
-                sleeperStart.setDate(sleeperStart.getDate() + 1);
-            }
-            
-            const sleeperEnd = new Date(sleeperStart);
-            sleeperEnd.setHours(sleeperEndHour, sleeperEndMin, 0, 0);
-            
-            // If sleepover end is before sleepover start, it wraps to next day
-            if (sleeperEnd <= sleeperStart) {
-                sleeperEnd.setDate(sleeperEnd.getDate() + 1);
-            }
-            
-            // Calculate working hours before and after sleepover
-            const hoursBeforeSleepover = (sleeperStart - start) / (1000 * 60 * 60);
-            const hoursAfterSleepover = (end - sleeperEnd) / (1000 * 60 * 60);
-            actualWorkHours = hoursBeforeSleepover + hoursAfterSleepover;
-            sleeperPeriodHours = (sleeperEnd - sleeperStart) / (1000 * 60 * 60);
-            
-            // Validate that sleepover period is within shift bounds
-            if (sleeperStart < start || sleeperEnd > end) {
-                // Consider it "using defaults" only if both times are empty (as per requirement)
-                const usingDefaults = !sleeperStartTime && !sleeperEndTime;
-                const warningMessage = usingDefaults 
-                    ? `Default sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Consider specifying custom sleepover times.`
-                    : `Sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Please check your times.`;
-                
-                allWarnings.push({
-                    title: `Sleepover Period Warning - Shift ${i + 1}`,
-                    message: warningMessage
-                });
-                // Reset to standard calculation
-                actualWorkHours = shiftHours;
-                sleeperPeriodHours = 0;
-            }
-        }
-        
-        // Recalculate hour categories based on actual work hours
-        if (isSleepover && actualWorkHours !== shiftHours) {
-            // Adjust all hour calculations proportionally
-            const ratio = actualWorkHours / shiftHours;
-            normalHours *= ratio;
-            overtime1Hours *= ratio;
-            overtime2Hours *= ratio;
-            saturdayHours *= ratio;
-            sundayHours *= ratio;
-            afternoonHours *= ratio;
-            nightShiftHours *= ratio;
         }
         
         // Calculate adjusted total for this shift
