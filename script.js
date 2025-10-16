@@ -1955,19 +1955,21 @@ function calculateHours() {
         let combinedNormalHours = 0;
         let combinedOvertimeHours = 0;
         let combinedHours = 0;
-        let isWeekday = true;
+        let canCombine = true;
         
         for (const idx of group) {
             const shift = shifts[idx];
             combinedHours += shift.hours;
-            // Check if any shift in group is on weekend
-            if (shift.saturdayHours > 0 || shift.sundayHours > 0) {
-                isWeekday = false;
+            // Only combine shifts that don't have special rates (weekend, afternoon, night)
+            // If any shift has special rates, don't recalculate overtime
+            if (shift.saturdayHours > 0 || shift.sundayHours > 0 || 
+                shift.afternoonHours > 0 || shift.nightShiftHours > 0) {
+                canCombine = false;
             }
         }
         
-        // Only recalculate overtime for weekday consecutive shifts
-        if (isWeekday) {
+        // Only recalculate overtime for normal weekday consecutive shifts without special rates
+        if (canCombine) {
             const maxDailyHours = award.maxDailyHours || 8;
             
             // Recalculate overtime for the combined shift
