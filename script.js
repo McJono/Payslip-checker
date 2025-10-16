@@ -364,7 +364,8 @@ function saveShiftData() {
             startTime: document.getElementById(`shiftStartTime-${shiftIndex}`)?.value || '',
             endDate: document.getElementById(`shiftEndDate-${shiftIndex}`)?.value || '',
             endTime: document.getElementById(`shiftEndTime-${shiftIndex}`)?.value || '',
-            isSleepover: document.getElementById(`isSleepover-${shiftIndex}`)?.value || 'false'
+            isSleepover: document.getElementById(`isSleepover-${shiftIndex}`)?.value || 'false',
+            hasSleeperAgreement: document.getElementById(`sleeperAgreement-${shiftIndex}-checkbox`)?.checked || false
         };
         shifts.push(shift);
     });
@@ -405,6 +406,7 @@ function loadShiftData() {
                         if (document.getElementById('shiftEndDate-0')) document.getElementById('shiftEndDate-0').value = shift.endDate || '';
                         if (document.getElementById('shiftEndTime-0')) document.getElementById('shiftEndTime-0').value = shift.endTime || '';
                         if (document.getElementById('isSleepover-0')) document.getElementById('isSleepover-0').value = shift.isSleepover || 'false';
+                        if (document.getElementById('sleeperAgreement-0-checkbox')) document.getElementById('sleeperAgreement-0-checkbox').checked = shift.hasSleeperAgreement || false;
                     }
                     
                     // Add additional shifts
@@ -418,6 +420,7 @@ function loadShiftData() {
                             if (document.getElementById(`shiftEndDate-${idx}`)) document.getElementById(`shiftEndDate-${idx}`).value = shift.endDate || '';
                             if (document.getElementById(`shiftEndTime-${idx}`)) document.getElementById(`shiftEndTime-${idx}`).value = shift.endTime || '';
                             if (document.getElementById(`isSleepover-${idx}`)) document.getElementById(`isSleepover-${idx}`).value = shift.isSleepover || 'false';
+                            if (document.getElementById(`sleeperAgreement-${idx}-checkbox`)) document.getElementById(`sleeperAgreement-${idx}-checkbox`).checked = shift.hasSleeperAgreement || false;
                         }, 100);
                     }
                 }
@@ -468,6 +471,35 @@ function setupAutoSave() {
             saveCalculatorData();
             saveShiftData();
         });
+    });
+    
+    // Auto-save shift data when hours award selection changes
+    const hoursAward = document.getElementById('hoursAward');
+    if (hoursAward) {
+        hoursAward.addEventListener('change', () => {
+            saveShiftData();
+        });
+    }
+    
+    // Auto-save shift data when any shift field changes
+    setupShiftAutoSave();
+}
+
+// Setup auto-save listeners for all shift input fields
+function setupShiftAutoSave() {
+    const shiftsContainer = document.getElementById('shiftsContainer');
+    if (!shiftsContainer) return;
+    
+    // Use event delegation for all shift inputs (handles dynamically added shifts)
+    shiftsContainer.addEventListener('change', (event) => {
+        if (event.target.classList.contains('shift-start-date') ||
+            event.target.classList.contains('shift-start-time') ||
+            event.target.classList.contains('shift-end-date') ||
+            event.target.classList.contains('shift-end-time') ||
+            event.target.classList.contains('shift-sleepover') ||
+            event.target.classList.contains('sleepover-agreement-checkbox')) {
+            saveShiftData();
+        }
     });
 }
 
@@ -1639,6 +1671,9 @@ function addShift() {
     
     // Update sleepover agreement visibility for new shift
     updateSleeperAgreementVisibility();
+    
+    // Save shift data after adding new shift
+    saveShiftData();
 }
 
 function removeShift(shiftIndex) {
@@ -1646,6 +1681,8 @@ function removeShift(shiftIndex) {
     if (shiftDiv) {
         shiftDiv.remove();
         renumberShifts();
+        // Save shift data after removing shift
+        saveShiftData();
     }
 }
 
