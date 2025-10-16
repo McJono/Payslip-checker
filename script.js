@@ -374,6 +374,7 @@ function saveShiftData() {
     
     const shiftData = {
         hoursAward: document.getElementById('hoursAward')?.value || '',
+        employmentType: document.getElementById('employmentType')?.value || 'full-time',
         shifts: shifts,
         shiftCount: shiftCount
     };
@@ -389,6 +390,9 @@ function loadShiftData() {
             const data = JSON.parse(saved);
             if (document.getElementById('hoursAward')) {
                 document.getElementById('hoursAward').value = data.hoursAward || '';
+            }
+            if (document.getElementById('employmentType')) {
+                document.getElementById('employmentType').value = data.employmentType || 'full-time';
             }
             
             // Load shifts if they exist
@@ -490,6 +494,14 @@ function setupAutoSave() {
     const hoursAward = document.getElementById('hoursAward');
     if (hoursAward) {
         hoursAward.addEventListener('change', () => {
+            saveShiftData();
+        });
+    }
+    
+    // Auto-save shift data when employment type changes
+    const employmentType = document.getElementById('employmentType');
+    if (employmentType) {
+        employmentType.addEventListener('change', () => {
             saveShiftData();
         });
     }
@@ -1893,124 +1905,102 @@ function calculateHours() {
         let afternoonHours = 0;
         let nightShiftHours = 0;
         
+        // Store the shift's initial category (to be potentially overridden by broken shift logic later)
+        let shiftCategory = 'normal';
+        
         // Calculate weekend hours - separate Saturday and Sunday
         const startDay = start.getDay(); // 0 = Sunday, 6 = Saturday
         const endDay = end.getDay();
         
-        // Determine if this is a weekend shift (takes precedence)
+        // Determine if this is a weekend shift
         const isWeekendShift = (startDay === 6 || endDay === 6 || startDay === 0 || endDay === 0);
+        const isSaturday = (startDay === 6 || endDay === 6);
+        const isSunday = (startDay === 0 || endDay === 0);
         
-        if (startDay === 6 || endDay === 6) {
-            // Saturday shift
-            saturdayHours = actualWorkHours;
-        } else if (startDay === 0 || endDay === 0) {
-            // Sunday shift
-            sundayHours = actualWorkHours;
+        // For sleepover shifts, use shift end time for classification
+        // For sleepover shifts with specified sleepover end time, the entire shift is night shift
+        let classificationEndTime = end;
+        let classificationEndHour = end.getHours();
+        let classificationEndMinute = end.getMinutes();
+        
+        // Parse shift timeframes for afternoon and night
+        const afternoonStart = award.afternoonShiftStart || '14:00';
+        const afternoonEnd = award.afternoonShiftEnd || '22:00';
+        const nightStart = award.nightShiftStart || '22:00';
+        const nightEnd = award.nightShiftEnd || '06:00';
+        
+        const [afternoonStartHour, afternoonStartMin] = afternoonStart.split(':').map(Number);
+        const [afternoonEndHour, afternoonEndMin] = afternoonEnd.split(':').map(Number);
+        const [nightStartHour, nightStartMin] = nightStart.split(':').map(Number);
+        const [nightEndHour, nightEndMin] = nightEnd.split(':').map(Number);
+        
+        // Check if shift ends within afternoon shift timeframe
+        // Afternoon shift: ends at/after Afternoon Start and ends before Afternoon End
+        let endsInAfternoonShift = false;
+        if (afternoonStartHour > afternoonEndHour) {
+            // Afternoon shift wraps around midnight
+            endsInAfternoonShift = (classificationEndHour > afternoonStartHour || classificationEndHour < afternoonEndHour || 
+                          (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin));
         } else {
-            // Weekday shift - check for afternoon/night shift rates
-            // For sleepover shifts with specified times, use the sleepover end time for classification
-            // Otherwise use the shift end time
-            let classificationEndTime = end;
-            let classificationEndHour = end.getHours();
-            let classificationEndMinute = end.getMinutes();
-            
-            // If this is a sleepover shift with a specified sleepover end time, 
-            // use that for night shift classification
-            if (isSleepover && sleeperEndTime) {
-                // Parse sleepover end time
-                const [sleeperEndHour, sleeperEndMin] = sleeperEndTime.split(':').map(Number);
-                // Create a date object for the sleepover end time
-                // Assume it's on the same day as shift end if before shift end hour, otherwise next day
-                const sleeperEndDate = new Date(end);
-                if (sleeperEndHour < end.getHours() || (sleeperEndHour === end.getHours() && sleeperEndMin < end.getMinutes())) {
-                    // Sleepover end is next day
-                    sleeperEndDate.setDate(sleeperEndDate.getDate() + 1);
-                }
-                sleeperEndDate.setHours(sleeperEndHour, sleeperEndMin, 0, 0);
-                classificationEndTime = sleeperEndDate;
-                classificationEndHour = sleeperEndHour;
-                classificationEndMinute = sleeperEndMin;
-            }
-            
-            // Issue #3: If shift ends within afternoon or night shift timeframe, entire shift is paid at that rate
-            
-            // Parse shift timeframes
-            const afternoonStart = award.afternoonShiftStart || '14:00';
-            const afternoonEnd = award.afternoonShiftEnd || '22:00';
-            const nightStart = award.nightShiftStart || '22:00';
-            const nightEnd = award.nightShiftEnd || '06:00';
-            
-            const [afternoonStartHour, afternoonStartMin] = afternoonStart.split(':').map(Number);
-            const [afternoonEndHour, afternoonEndMin] = afternoonEnd.split(':').map(Number);
-            const [nightStartHour, nightStartMin] = nightStart.split(':').map(Number);
-            const [nightEndHour, nightEndMin] = nightEnd.split(':').map(Number);
-            
-            // Check if shift ends within afternoon shift timeframe
-            // Priority: Check afternoon shift BEFORE night shift to handle overlapping boundaries correctly
-            let endsInAfternoonShift = false;
-            if (afternoonStartHour > afternoonEndHour) {
-                // Afternoon shift wraps around midnight
-                endsInAfternoonShift = (classificationEndHour > afternoonStartHour || classificationEndHour < afternoonEndHour || 
-                              (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin) ||
-                              (classificationEndHour === afternoonEndHour && classificationEndMinute <= afternoonEndMin));
-            } else {
-                // Afternoon shift doesn't wrap
-                endsInAfternoonShift = ((classificationEndHour > afternoonStartHour || (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin)) &&
-                              (classificationEndHour < afternoonEndHour || (classificationEndHour === afternoonEndHour && classificationEndMinute <= afternoonEndMin)));
-            }
-            
-            // Check if shift ends within night shift timeframe
-            // Night shift is typically 22:00-06:00, but we extend the end to before 7:00 to catch early morning shifts
-            // Use >= for start boundary to include exact boundary times (end boundary already uses <=)
-            let endsInNightShift = false;
+            // Afternoon shift doesn't wrap
+            // Must be >= afternoonStart AND < afternoonEnd (strictly less than)
+            endsInAfternoonShift = ((classificationEndHour > afternoonStartHour || (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin)) &&
+                          (classificationEndHour < afternoonEndHour));
+        }
+        
+        // Check if shift ends within night shift timeframe
+        // For sleepover shifts, if it's part of a sleepover shift then the entire shift should be night shift
+        let endsInNightShift = false;
+        if (isSleepover) {
+            // For sleepover shifts, entire shift is night shift
+            endsInNightShift = true;
+        } else {
+            // Night shift check based on end time
+            // Night shift: ends at/after Night Start Time and ends before Night End Time
             if (nightStartHour > nightEndHour) {
                 // Night shift wraps around midnight (e.g., 22:00 to 06:00)
-                // A shift ending before 7:00 AM is still considered night shift
-                endsInNightShift = (classificationEndHour > nightStartHour || classificationEndHour < 7 || 
+                // Must be >= nightStart OR < nightEnd (strictly less than)
+                endsInNightShift = (classificationEndHour >= nightStartHour || classificationEndHour < nightEndHour || 
                               (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin));
             } else {
                 // Night shift doesn't wrap
-                endsInNightShift = ((classificationEndHour > nightStartHour || (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin)) &&
-                              (classificationEndHour < nightEndHour || (classificationEndHour === nightEndHour && classificationEndMinute <= nightEndMin)));
+                endsInNightShift = ((classificationEndHour >= nightStartHour || (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin)) &&
+                              (classificationEndHour < nightEndHour || (classificationEndHour === nightEndHour && classificationEndMinute < nightEndMin)));
             }
+        }
+        
+        // Apply NEW priority order (broken shift check will be done later):
+        // 1. Weekend (Saturday/Sunday)
+        // 2. Afternoon Shift
+        // 3. Night Shift
+        // 4. Normal
+        
+        if (isSaturday) {
+            // Saturday shift
+            saturdayHours = actualWorkHours;
+            shiftCategory = 'saturday';
+        } else if (isSunday) {
+            // Sunday shift
+            sundayHours = actualWorkHours;
+            shiftCategory = 'sunday';
+        } else if (endsInAfternoonShift) {
+            // Entire shift is paid at afternoon shift rate
+            afternoonHours = actualWorkHours;
+            shiftCategory = 'afternoon';
+        } else if (endsInNightShift) {
+            // Entire shift is paid at night shift rate
+            nightShiftHours = actualWorkHours;
+            shiftCategory = 'night';
+        } else {
+            // Normal shift - check for daily overtime
+            const maxDailyHours = award.maxDailyHours || 8;
+            const overtime2Threshold = award.overtime2Hours || 10;
             
-            // Determine shift rate based on end time - check afternoon FIRST
-            if (endsInAfternoonShift) {
-                // Entire shift is paid at afternoon shift rate
-                afternoonHours = actualWorkHours;
-            } else if (endsInNightShift) {
-                // Entire shift is paid at night shift rate
-                nightShiftHours = actualWorkHours;
-            } else {
-                // Normal shift - check for daily overtime
-                const maxDailyHours = award.maxDailyHours || 8;
-                const overtime2Threshold = award.overtime2Hours || 10;
-                
-                // Validate that overtime2Threshold is greater than maxDailyHours
-                // If not, treat all overtime as overtime1
-                if (overtime2Threshold <= maxDailyHours) {
-                    // Invalid configuration - treat all overtime at overtime1 rate
-                    if (actualWorkHours > maxDailyHours) {
-                        overtime1Hours = actualWorkHours - maxDailyHours;
-                        normalHours = maxDailyHours;
-                        allWarnings.push({
-                            title: `Daily Overtime Detected - Shift ${i + 1}`,
-                            message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
-                        });
-                    } else {
-                        normalHours = actualWorkHours;
-                    }
-                } else if (actualWorkHours > overtime2Threshold) {
-                    // Shift exceeds overtime2 threshold - split into normal, overtime1, and overtime2
-                    overtime2Hours = actualWorkHours - overtime2Threshold;
-                    overtime1Hours = overtime2Threshold - maxDailyHours;
-                    normalHours = maxDailyHours;
-                    allWarnings.push({
-                        title: `Daily Overtime 2 Detected - Shift ${i + 1}`,
-                        message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the overtime 2 threshold (${overtime2Threshold} hours).`
-                    });
-                } else if (actualWorkHours > maxDailyHours) {
-                    // Shift exceeds maxDailyHours but not overtime2 threshold
+            // Validate that overtime2Threshold is greater than maxDailyHours
+            // If not, treat all overtime as overtime1
+            if (overtime2Threshold <= maxDailyHours) {
+                // Invalid configuration - treat all overtime at overtime1 rate
+                if (actualWorkHours > maxDailyHours) {
                     overtime1Hours = actualWorkHours - maxDailyHours;
                     normalHours = maxDailyHours;
                     allWarnings.push({
@@ -2020,7 +2010,27 @@ function calculateHours() {
                 } else {
                     normalHours = actualWorkHours;
                 }
+            } else if (actualWorkHours > overtime2Threshold) {
+                // Shift exceeds overtime2 threshold - split into normal, overtime1, and overtime2
+                overtime2Hours = actualWorkHours - overtime2Threshold;
+                overtime1Hours = overtime2Threshold - maxDailyHours;
+                normalHours = maxDailyHours;
+                allWarnings.push({
+                    title: `Daily Overtime 2 Detected - Shift ${i + 1}`,
+                    message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the overtime 2 threshold (${overtime2Threshold} hours).`
+                });
+            } else if (actualWorkHours > maxDailyHours) {
+                // Shift exceeds maxDailyHours but not overtime2 threshold
+                overtime1Hours = actualWorkHours - maxDailyHours;
+                normalHours = maxDailyHours;
+                allWarnings.push({
+                    title: `Daily Overtime Detected - Shift ${i + 1}`,
+                    message: `Shift duration (${actualWorkHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+                });
+            } else {
+                normalHours = actualWorkHours;
             }
+            shiftCategory = 'normal';
         }
         
         // Calculate adjusted total for this shift
@@ -2042,7 +2052,8 @@ function calculateHours() {
             saturdayHours: saturdayHours,
             sundayHours: sundayHours,
             afternoonHours: afternoonHours,
-            nightShiftHours: nightShiftHours
+            nightShiftHours: nightShiftHours,
+            category: shiftCategory  // Store the initial category
         });
         
         // Add to totals
@@ -2057,6 +2068,10 @@ function calculateHours() {
     
     // Sort shifts by start time for processing consecutive shifts
     shifts.sort((a, b) => a.start - b.start);
+    
+    // Get employment type
+    const employmentType = document.getElementById('employmentType')?.value || 'full-time';
+    const isCasual = employmentType === 'casual';
     
     // Track which shifts are broken shifts and which are consecutive
     const brokenShiftIndices = new Set();
@@ -2111,24 +2126,30 @@ function calculateHours() {
                 // Use tolerance to avoid flagging shifts that are at or very close to minimum break
                 // Only mark current shift as broken if previous shift is not already marked as broken
                 // This ensures that only the 2nd shift in a chain of broken shifts is treated as broken
-                if (!brokenShiftIndices.has(i - 1)) {
+                // NEW: Only apply broken shift penalty if NOT casual
+                if (!brokenShiftIndices.has(i - 1) && !isCasual) {
                     brokenShiftIndices.add(i);
                     allWarnings.push({
                         title: `Broken Shift Detected - Shift ${currentShift.index + 1}`,
                         message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). This shift may qualify for broken shift penalties.`
+                    });
+                } else if (isCasual) {
+                    // For casual employees, note the insufficient break but don't apply broken shift penalty
+                    allWarnings.push({
+                        title: `Insufficient Break - Shift ${currentShift.index + 1}`,
+                        message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). Broken shift penalties do not apply to casual employees.`
                     });
                 }
             }
         }
     }
     
-    // Subtract broken shift hours from all categories and add to broken shift total
-    // Issue #2: If a shift is treated as a broken shift, don't count those hours towards anything else
-    // Weekend and night shifts with insufficient breaks should also be reclassified as broken shifts
+    // Reclassify broken shifts (highest priority unless casual)
+    // NEW PRIORITY ORDER: Broken Shift > Weekend > Afternoon > Night > Normal
     brokenShiftIndices.forEach(idx => {
         const shift = shifts[idx];
         // Reclassify all broken shifts regardless of their original category
-        // This includes weekend and night shifts with insufficient break times
+        // This includes weekend, afternoon, and night shifts with insufficient break times
         totalNormalHours -= shift.normalHours;
         totalOvertime1Hours -= shift.overtime1Hours;
         totalOvertime2Hours -= shift.overtime2Hours;
