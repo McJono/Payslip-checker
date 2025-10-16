@@ -365,7 +365,9 @@ function saveShiftData() {
             endDate: document.getElementById(`shiftEndDate-${shiftIndex}`)?.value || '',
             endTime: document.getElementById(`shiftEndTime-${shiftIndex}`)?.value || '',
             isSleepover: document.getElementById(`isSleepover-${shiftIndex}`)?.value || 'false',
-            hasSleeperAgreement: document.getElementById(`sleeperAgreement-${shiftIndex}-checkbox`)?.checked || false
+            hasSleeperAgreement: document.getElementById(`sleeperAgreement-${shiftIndex}-checkbox`)?.checked || false,
+            sleeperStartTime: document.getElementById(`sleeperStartTime-${shiftIndex}`)?.value || '',
+            sleeperEndTime: document.getElementById(`sleeperEndTime-${shiftIndex}`)?.value || ''
         };
         shifts.push(shift);
     });
@@ -409,6 +411,10 @@ function loadShiftData() {
                         if (document.getElementById('shiftEndTime-0')) document.getElementById('shiftEndTime-0').value = shift.endTime || '';
                         if (document.getElementById('isSleepover-0')) document.getElementById('isSleepover-0').value = shift.isSleepover || 'false';
                         if (document.getElementById('sleeperAgreement-0-checkbox')) document.getElementById('sleeperAgreement-0-checkbox').checked = shift.hasSleeperAgreement || false;
+                        if (document.getElementById('sleeperStartTime-0')) document.getElementById('sleeperStartTime-0').value = shift.sleeperStartTime || '';
+                        if (document.getElementById('sleeperEndTime-0')) document.getElementById('sleeperEndTime-0').value = shift.sleeperEndTime || '';
+                        // Trigger sleepover details visibility
+                        toggleSleeperDetails(0);
                     }
                     
                     // Add additional shifts (skip auto-save during loading)
@@ -423,6 +429,10 @@ function loadShiftData() {
                         if (document.getElementById(`shiftEndTime-${createdShiftIndex}`)) document.getElementById(`shiftEndTime-${createdShiftIndex}`).value = shift.endTime || '';
                         if (document.getElementById(`isSleepover-${createdShiftIndex}`)) document.getElementById(`isSleepover-${createdShiftIndex}`).value = shift.isSleepover || 'false';
                         if (document.getElementById(`sleeperAgreement-${createdShiftIndex}-checkbox`)) document.getElementById(`sleeperAgreement-${createdShiftIndex}-checkbox`).checked = shift.hasSleeperAgreement || false;
+                        if (document.getElementById(`sleeperStartTime-${createdShiftIndex}`)) document.getElementById(`sleeperStartTime-${createdShiftIndex}`).value = shift.sleeperStartTime || '';
+                        if (document.getElementById(`sleeperEndTime-${createdShiftIndex}`)) document.getElementById(`sleeperEndTime-${createdShiftIndex}`).value = shift.sleeperEndTime || '';
+                        // Trigger sleepover details visibility
+                        toggleSleeperDetails(createdShiftIndex);
                     }
                 }
             }
@@ -503,7 +513,9 @@ function setupShiftAutoSave() {
             event.target.classList.contains('shift-end-date') ||
             event.target.classList.contains('shift-end-time') ||
             event.target.classList.contains('shift-sleepover') ||
-            event.target.classList.contains('sleepover-agreement-checkbox')) {
+            event.target.classList.contains('sleepover-agreement-checkbox') ||
+            event.target.classList.contains('sleepover-start-time') ||
+            event.target.classList.contains('sleepover-end-time')) {
             saveShiftData();
         }
     });
@@ -1621,6 +1633,20 @@ function updateSleeperAgreementVisibility() {
     });
 }
 
+// Toggle sleepover details visibility
+function toggleSleeperDetails(shiftIndex) {
+    const sleeperSelect = document.getElementById(`isSleepover-${shiftIndex}`);
+    const detailsSection = document.getElementById(`sleeperDetails-${shiftIndex}`);
+    
+    if (sleeperSelect && detailsSection) {
+        const isSleepover = sleeperSelect.value === 'true';
+        detailsSection.style.display = isSleepover ? 'block' : 'none';
+    }
+    
+    // Also update agreement visibility
+    updateSleeperAgreementVisibility();
+}
+
 // Shift management
 let shiftCount = 1;
 let isLoadingShiftData = false; // Flag to prevent auto-save during data loading
@@ -1649,10 +1675,20 @@ function addShift(skipAutoSave = false) {
 
         <div class="form-group">
             <label for="isSleepover-${shiftIndex}">Is this a sleepover shift?</label>
-            <select id="isSleepover-${shiftIndex}" class="form-control shift-sleepover">
+            <select id="isSleepover-${shiftIndex}" class="form-control shift-sleepover" onchange="toggleSleeperDetails(${shiftIndex})">
                 <option value="false">No</option>
                 <option value="true">Yes</option>
             </select>
+        </div>
+
+        <div class="form-group sleepover-details-section" id="sleeperDetails-${shiftIndex}" style="display: none;">
+            <label for="sleeperStartTime-${shiftIndex}">Sleepover Start Time (optional):</label>
+            <input type="time" id="sleeperStartTime-${shiftIndex}" class="form-control sleepover-start-time">
+            <small class="info-text">Leave empty if sleepover starts at shift end time</small>
+            
+            <label for="sleeperEndTime-${shiftIndex}" style="margin-top: 10px;">Sleepover End Time (optional):</label>
+            <input type="time" id="sleeperEndTime-${shiftIndex}" class="form-control sleepover-end-time">
+            <small class="info-text">Leave empty for standard 8-hour sleepover period</small>
         </div>
 
         <div class="form-group sleepover-agreement-section" id="sleeperAgreement-${shiftIndex}" style="display: none;">
@@ -1760,6 +1796,8 @@ function calculateHours() {
         const endTime = document.getElementById(`shiftEndTime-${shiftIndex}`).value;
         const isSleepover = document.getElementById(`isSleepover-${shiftIndex}`).value === 'true';
         const hasSleeperAgreement = document.getElementById(`sleeperAgreement-${shiftIndex}-checkbox`)?.checked || false;
+        const sleeperStartTime = document.getElementById(`sleeperStartTime-${shiftIndex}`)?.value || '';
+        const sleeperEndTime = document.getElementById(`sleeperEndTime-${shiftIndex}`)?.value || '';
         
         // Validation for this shift
         if (!startDate || !startTime) {
@@ -1809,9 +1847,31 @@ function calculateHours() {
             sundayHours = shiftHours;
         } else {
             // Weekday shift - check for afternoon/night shift rates
+            // For sleepover shifts with specified times, use the sleepover end time for classification
+            // Otherwise use the shift end time
+            let classificationEndTime = end;
+            let classificationEndHour = end.getHours();
+            let classificationEndMinute = end.getMinutes();
+            
+            // If this is a sleepover shift with a specified sleepover end time, 
+            // use that for night shift classification
+            if (isSleepover && sleeperEndTime) {
+                // Parse sleepover end time
+                const [sleeperEndHour, sleeperEndMin] = sleeperEndTime.split(':').map(Number);
+                // Create a date object for the sleepover end time
+                // Assume it's on the same day as shift end if before shift end hour, otherwise next day
+                const sleeperEndDate = new Date(end);
+                if (sleeperEndHour < end.getHours() || (sleeperEndHour === end.getHours() && sleeperEndMin < end.getMinutes())) {
+                    // Sleepover end is next day
+                    sleeperEndDate.setDate(sleeperEndDate.getDate() + 1);
+                }
+                sleeperEndDate.setHours(sleeperEndHour, sleeperEndMin, 0, 0);
+                classificationEndTime = sleeperEndDate;
+                classificationEndHour = sleeperEndHour;
+                classificationEndMinute = sleeperEndMin;
+            }
+            
             // Issue #3: If shift ends within afternoon or night shift timeframe, entire shift is paid at that rate
-            const endHour = end.getHours();
-            const endMinute = end.getMinutes();
             
             // Parse shift timeframes
             const afternoonStart = award.afternoonShiftStart || '14:00';
@@ -1829,13 +1889,13 @@ function calculateHours() {
             let endsInAfternoonShift = false;
             if (afternoonStartHour > afternoonEndHour) {
                 // Afternoon shift wraps around midnight
-                endsInAfternoonShift = (endHour > afternoonStartHour || endHour < afternoonEndHour || 
-                              (endHour === afternoonStartHour && endMinute >= afternoonStartMin) ||
-                              (endHour === afternoonEndHour && endMinute <= afternoonEndMin));
+                endsInAfternoonShift = (classificationEndHour > afternoonStartHour || classificationEndHour < afternoonEndHour || 
+                              (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin) ||
+                              (classificationEndHour === afternoonEndHour && classificationEndMinute <= afternoonEndMin));
             } else {
                 // Afternoon shift doesn't wrap
-                endsInAfternoonShift = ((endHour > afternoonStartHour || (endHour === afternoonStartHour && endMinute >= afternoonStartMin)) &&
-                              (endHour < afternoonEndHour || (endHour === afternoonEndHour && endMinute <= afternoonEndMin)));
+                endsInAfternoonShift = ((classificationEndHour > afternoonStartHour || (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin)) &&
+                              (classificationEndHour < afternoonEndHour || (classificationEndHour === afternoonEndHour && classificationEndMinute <= afternoonEndMin)));
             }
             
             // Check if shift ends within night shift timeframe
@@ -1845,12 +1905,12 @@ function calculateHours() {
             if (nightStartHour > nightEndHour) {
                 // Night shift wraps around midnight (e.g., 22:00 to 06:00)
                 // A shift ending before 7:00 AM is still considered night shift
-                endsInNightShift = (endHour > nightStartHour || endHour < 7 || 
-                              (endHour === nightStartHour && endMinute >= nightStartMin));
+                endsInNightShift = (classificationEndHour > nightStartHour || classificationEndHour < 7 || 
+                              (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin));
             } else {
                 // Night shift doesn't wrap
-                endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute >= nightStartMin)) &&
-                              (endHour < nightEndHour || (endHour === nightEndHour && endMinute <= nightEndMin)));
+                endsInNightShift = ((classificationEndHour > nightStartHour || (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin)) &&
+                              (classificationEndHour < nightEndHour || (classificationEndHour === nightEndHour && classificationEndMinute <= nightEndMin)));
             }
             
             // Determine shift rate based on end time - check afternoon FIRST
@@ -1902,10 +1962,66 @@ function calculateHours() {
             }
         }
         
-        // NOTE: Sleepover shifts do NOT reduce working hours
-        // The sleepover is a separate 8-hour non-paid rest period AFTER the work shift
-        // It only affects break calculations, not the hours worked
-        // Working hours = actual shift duration (no deduction for sleepover)
+        // NOTE: Sleepover shifts may have work time before and after the sleepover period
+        // If sleepover start/end times are specified, calculate working hours accordingly
+        // Working hours = (sleepover start - shift start) + (shift end - sleepover end)
+        // Otherwise, working hours = shift duration (sleepover is after shift end)
+        let actualWorkHours = shiftHours;
+        let sleeperPeriodHours = 0;
+        
+        if (isSleepover && sleeperStartTime && sleeperEndTime) {
+            // Parse sleepover times
+            const [sleeperStartHour, sleeperStartMin] = sleeperStartTime.split(':').map(Number);
+            const [sleeperEndHour, sleeperEndMin] = sleeperEndTime.split(':').map(Number);
+            
+            // Create date objects for sleepover period
+            const sleeperStart = new Date(start);
+            sleeperStart.setHours(sleeperStartHour, sleeperStartMin, 0, 0);
+            
+            // If sleepover start is before shift start, it's likely meant to be later in the shift
+            if (sleeperStart < start) {
+                sleeperStart.setDate(sleeperStart.getDate() + 1);
+            }
+            
+            const sleeperEnd = new Date(sleeperStart);
+            sleeperEnd.setHours(sleeperEndHour, sleeperEndMin, 0, 0);
+            
+            // If sleepover end is before sleepover start, it wraps to next day
+            if (sleeperEnd <= sleeperStart) {
+                sleeperEnd.setDate(sleeperEnd.getDate() + 1);
+            }
+            
+            // Calculate working hours before and after sleepover
+            const hoursBeforeSleepover = (sleeperStart - start) / (1000 * 60 * 60);
+            const hoursAfterSleepover = (end - sleeperEnd) / (1000 * 60 * 60);
+            actualWorkHours = hoursBeforeSleepover + hoursAfterSleepover;
+            sleeperPeriodHours = (sleeperEnd - sleeperStart) / (1000 * 60 * 60);
+            
+            // Validate that sleepover period is within shift bounds
+            if (sleeperStart < start || sleeperEnd > end) {
+                allWarnings.push({
+                    title: `Sleepover Period Warning - Shift ${i + 1}`,
+                    message: `Sleepover period (${sleeperStartTime} - ${sleeperEndTime}) extends outside shift bounds. Please check your times.`
+                });
+                // Reset to standard calculation
+                actualWorkHours = shiftHours;
+                sleeperPeriodHours = 0;
+            }
+        }
+        
+        // Recalculate hour categories based on actual work hours
+        if (isSleepover && actualWorkHours !== shiftHours) {
+            // Adjust all hour calculations proportionally
+            const ratio = actualWorkHours / shiftHours;
+            normalHours *= ratio;
+            overtime1Hours *= ratio;
+            overtime2Hours *= ratio;
+            saturdayHours *= ratio;
+            sundayHours *= ratio;
+            afternoonHours *= ratio;
+            nightShiftHours *= ratio;
+        }
+        
         // Calculate adjusted total for this shift
         const adjustedShiftHours = normalHours + overtime1Hours + overtime2Hours + saturdayHours + sundayHours + afternoonHours + nightShiftHours;
         totalHours += adjustedShiftHours;
@@ -1917,7 +2033,8 @@ function calculateHours() {
             end: end,
             isSleepover: isSleepover,
             hasSleeperAgreement: hasSleeperAgreement,
-            hours: shiftHours,
+            hours: actualWorkHours,  // Use actual work hours, not total shift duration
+            sleeperPeriodHours: sleeperPeriodHours,
             normalHours: normalHours,
             overtime1Hours: overtime1Hours,
             overtime2Hours: overtime2Hours,
@@ -2006,21 +2123,22 @@ function calculateHours() {
     
     // Subtract broken shift hours from all categories and add to broken shift total
     // Issue #2: If a shift is treated as a broken shift, don't count those hours towards anything else
-    // IMPORTANT: Weekend and night shifts take priority over broken shift classification
+    // Weekend and night shifts with insufficient breaks should also be reclassified as broken shifts
     brokenShiftIndices.forEach(idx => {
         const shift = shifts[idx];
-        // Only reclassify as broken shift if it's not already a weekend or night shift
-        // Weekend and night shifts maintain their classification even with insufficient breaks
-        if (shift.saturdayHours === 0 && shift.sundayHours === 0 && shift.nightShiftHours === 0) {
-            totalNormalHours -= shift.normalHours;
-            totalOvertime1Hours -= shift.overtime1Hours;
-            totalOvertime2Hours -= shift.overtime2Hours;
-            totalAfternoonHours -= shift.afternoonHours;
-            totalBrokenShiftHours += shift.hours;
-            totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours + shift.afternoonHours);
-            totalHours += shift.hours; // Add back the full shift hours to broken shift
-        }
-        // If it's a weekend or night shift, keep it in its original category despite insufficient break
+        // Reclassify all broken shifts regardless of their original category
+        // This includes weekend and night shifts with insufficient break times
+        totalNormalHours -= shift.normalHours;
+        totalOvertime1Hours -= shift.overtime1Hours;
+        totalOvertime2Hours -= shift.overtime2Hours;
+        totalSaturdayHours -= shift.saturdayHours;
+        totalSundayHours -= shift.sundayHours;
+        totalAfternoonHours -= shift.afternoonHours;
+        totalNightShiftHours -= shift.nightShiftHours;
+        totalBrokenShiftHours += shift.hours;
+        totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours + 
+                      shift.saturdayHours + shift.sundayHours + shift.afternoonHours + shift.nightShiftHours);
+        totalHours += shift.hours; // Add back the full shift hours to broken shift
     });
     
     // Issue #3: Process consecutive shift groups for combined overtime calculation
