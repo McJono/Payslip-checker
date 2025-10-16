@@ -51,6 +51,40 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 7. Select if you have a HELP debt
 8. Click "Calculate Pay" to see your breakdown
 
+#### Using the Hours Calculator
+
+The Hours Calculator helps you track actual hours worked across multiple shifts and automatically categorizes them based on shift type, timing, and breaks.
+
+1. Click the "Hours Calculator" tab
+2. Select an award from the dropdown
+3. For each shift, enter:
+   - **Shift Start Date and Time**: When the shift begins
+   - **Shift End Date and Time**: When the shift ends
+   - **Is this a sleepover shift?**: Select "Yes" if applicable
+     - **Sleepover Start Time (optional)**: When the sleepover period begins within the shift
+     - **Sleepover End Time (optional)**: When the sleepover period ends within the shift
+     - Leave sleepover times empty if the sleepover is a standard 8-hour period after the work shift
+   - **Sleepover Agreement**: Check if you have a signed agreement for 8-hour breaks after sleepovers
+4. Click "Add Another Shift" to add more shifts
+5. Click "Calculate Hours" to see the breakdown
+
+**Hours Breakdown:**
+- **Total Hours Worked**: Sum of all working hours (excluding sleepover periods)
+- **Normal Hours**: Regular hours within standard daily limits
+- **Overtime1/Overtime2 Hours**: Hours beyond daily maximums
+- **Broken Shift Hours**: Shifts with insufficient break time from previous shift
+- **Saturday/Sunday Hours**: Weekend shifts (classified separately)
+- **Afternoon/Night Shift Hours**: Based on shift end time
+- **Meal Allowances**: Automatically calculated for consecutive shifts
+
+**Important Notes:**
+- **Sleepover Shifts with Work Before and After**: You can now specify sleepover periods within a shift. For example, a shift from 17:00 to 09:00 with sleepover from 22:00 to 06:00 will calculate working hours as (22:00-17:00) + (09:00-06:00) = 8 hours.
+- **Broken Shifts**: Shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts, **including weekend and night shifts**.
+- **Break Time Tolerance**: An exact 8-hour break (when allowed with agreement) is acceptable and won't be flagged as insufficient.
+- **Night Shift Classification**: For sleepover shifts with work after the sleepover, the end of the entire shift (including post-sleepover work) is used to determine if it qualifies as a night shift.
+
+6. Click "Push Hours to Pay Calculator" to transfer the calculated hours to the Pay Calculator tab
+
 ### For Administrators
 
 #### Award Management
@@ -240,6 +274,9 @@ Works on all modern browsers:
 - For accurate tax calculations, please consult with a tax professional or use official ATO resources
 - Data is stored locally in your browser and is not sent to any server
 - Saturday and Sunday rates are now separate to accommodate different penalty rates for each day
+- **Sleepover Shifts**: Now supports sleepover shifts with work time before and after the sleepover period (e.g., 17:00-22:00 work, 22:00-06:00 sleepover, 06:00-09:00 work)
+- **Broken Shifts**: Weekend and night shifts with insufficient break times are now correctly classified as broken shifts (previously they maintained their original classification)
+- **Break Times**: The minimum break time is 10 hours normally, or 8 hours if a sleepover agreement is in place. An exact 8-hour break is acceptable and won't be flagged as insufficient.
 
 ## License
 
