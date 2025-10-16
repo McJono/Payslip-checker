@@ -6,6 +6,7 @@ A comprehensive web-based payslip calculator for Australian workers that helps y
 
 - **Pay Calculator**: Input your hours worked, pay rate, and allowances to calculate your net pay
 - **Multiple Award Support**: Select from different awards with pre-configured rate multipliers
+- **Employment Types**: Specify if you're casual, part-time, or full-time (affects broken shift penalties)
 - **Rate Types**: Support for:
   - Normal hours
   - Overtime (configurable multiplier)
@@ -57,7 +58,9 @@ The Hours Calculator helps you track actual hours worked across multiple shifts 
 
 1. Click the "Hours Calculator" tab
 2. Select an award from the dropdown
-3. For each shift, enter:
+3. **Select employment type** (Full-time, Part-time, or Casual)
+   - **Important**: Broken shift penalties do NOT apply to casual employees
+4. For each shift, enter:
    - **Shift Start Date and Time**: When the shift begins
    - **Shift End Date and Time**: When the shift ends
    - **Is this a sleepover shift?**: Select "Yes" if applicable
@@ -72,16 +75,30 @@ The Hours Calculator helps you track actual hours worked across multiple shifts 
 - **Total Hours Worked**: Sum of all working hours (excluding sleepover periods)
 - **Normal Hours**: Regular hours within standard daily limits
 - **Overtime1/Overtime2 Hours**: Hours beyond daily maximums
-- **Broken Shift Hours**: Shifts with insufficient break time from previous shift
+- **Broken Shift Hours**: Shifts with insufficient break time from previous shift (highest priority unless casual)
 - **Saturday/Sunday Hours**: Weekend shifts (classified separately)
 - **Afternoon/Night Shift Hours**: Based on shift end time
 - **Meal Allowances**: Automatically calculated for consecutive shifts
 
+**Shift Classification Priority Order:**
+The calculator classifies shifts using the following priority order (higher priority overrides lower):
+1. **Broken Shift** (Highest Priority) - Any shift with insufficient break time from the previous shift
+   - **Exception**: Casual employees do NOT receive broken shift penalties
+   - Minimum break: 10 hours normally, 8 hours with sleepover agreement
+2. **Weekend** - Saturday or Sunday shifts
+3. **Afternoon Shift** - Shift ends at/after Afternoon Start Time and before Afternoon End Time
+   - Default times: 14:00-22:00 (configurable in award settings)
+4. **Night Shift** - Shift ends at/after Night Start Time and before Night End Time
+   - Default times: 22:00-06:00 (configurable in award settings)
+   - **Special case**: Sleepover shifts are always classified as night shifts
+5. **Normal** - Default category for all other shifts
+
 **Important Notes:**
+- **Employment Type**: Casual employees do NOT receive broken shift penalties even if breaks are insufficient
 - **Sleepover Shifts with Work Before and After**: You can now specify sleepover periods within a shift. For example, a shift from 17:00 to 09:00 with sleepover from 22:00 to 06:00 will calculate working hours as: pre-sleepover work (17:00-22:00 = 5 hours) + post-sleepover work (06:00-09:00 = 3 hours) = 8 total working hours.
-- **Broken Shifts**: Previously, weekend and night shifts maintained their classification even with insufficient break times. Now, shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts, **regardless of whether they are weekend or night shifts**.
+- **Broken Shifts**: Shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts with **highest priority**, overriding weekend, afternoon, and night shift classifications (unless you're casual).
 - **Break Time Tolerance**: An exact 8-hour break (when allowed with agreement) is acceptable and won't be flagged as insufficient.
-- **Night Shift Classification**: For sleepover shifts with work after the sleepover, the end of the entire shift (including post-sleepover work) is used to determine if it qualifies as a night shift.
+- **Night Shift Classification**: For sleepover shifts, the entire shift is classified as a night shift regardless of end time.
 
 6. Click "Push Hours to Pay Calculator" to transfer the calculated hours to the Pay Calculator tab
 
@@ -274,8 +291,11 @@ Works on all modern browsers:
 - For accurate tax calculations, please consult with a tax professional or use official ATO resources
 - Data is stored locally in your browser and is not sent to any server
 - Saturday and Sunday rates are now separate to accommodate different penalty rates for each day
-- **Sleepover Shifts**: Now supports sleepover shifts with work time before and after the sleepover period (e.g., 17:00-22:00 work, 22:00-06:00 sleepover, 06:00-09:00 work)
-- **Broken Shifts**: Weekend and night shifts with insufficient break times are now correctly classified as broken shifts (previously they maintained their original classification)
+- **Employment Types**: 
+  - Full-time and Part-time employees receive broken shift penalties when break times are insufficient
+  - Casual employees do NOT receive broken shift penalties
+- **Shift Priority**: Broken shifts have the highest classification priority (unless casual), followed by Weekend, Afternoon, Night, then Normal
+- **Sleepover Shifts**: Now supports sleepover shifts with work time before and after the sleepover period (e.g., 17:00-22:00 work, 22:00-06:00 sleepover, 06:00-09:00 work). Sleepover shifts are always classified as night shifts.
 - **Break Times**: The minimum break time is 10 hours normally, or 8 hours if a sleepover agreement is in place. An exact 8-hour break is acceptable and won't be flagged as insufficient.
 
 ## License
