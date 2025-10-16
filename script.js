@@ -1935,16 +1935,17 @@ function calculateHours() {
         const [nightEndHour, nightEndMin] = nightEnd.split(':').map(Number);
         
         // Check if shift ends within afternoon shift timeframe
+        // Afternoon shift: ends at/after Afternoon Start and ends before Afternoon End
         let endsInAfternoonShift = false;
         if (afternoonStartHour > afternoonEndHour) {
             // Afternoon shift wraps around midnight
             endsInAfternoonShift = (classificationEndHour > afternoonStartHour || classificationEndHour < afternoonEndHour || 
-                          (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin) ||
-                          (classificationEndHour === afternoonEndHour && classificationEndMinute < afternoonEndMin));
+                          (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin));
         } else {
             // Afternoon shift doesn't wrap
+            // Must be >= afternoonStart AND < afternoonEnd (strictly less than)
             endsInAfternoonShift = ((classificationEndHour > afternoonStartHour || (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin)) &&
-                          (classificationEndHour < afternoonEndHour || (classificationEndHour === afternoonEndHour && classificationEndMinute < afternoonEndMin)));
+                          (classificationEndHour < afternoonEndHour));
         }
         
         // Check if shift ends within night shift timeframe
@@ -1955,11 +1956,12 @@ function calculateHours() {
             endsInNightShift = true;
         } else {
             // Night shift check based on end time
+            // Night shift: ends at/after Night Start Time and ends before Night End Time
             if (nightStartHour > nightEndHour) {
                 // Night shift wraps around midnight (e.g., 22:00 to 06:00)
+                // Must be >= nightStart OR < nightEnd (strictly less than)
                 endsInNightShift = (classificationEndHour >= nightStartHour || classificationEndHour < nightEndHour || 
-                              (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin) ||
-                              (classificationEndHour === nightEndHour && classificationEndMinute < nightEndMin));
+                              (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin));
             } else {
                 // Night shift doesn't wrap
                 endsInNightShift = ((classificationEndHour >= nightStartHour || (classificationEndHour === nightStartHour && classificationEndMinute >= nightStartMin)) &&
