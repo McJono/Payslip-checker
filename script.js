@@ -2007,7 +2007,7 @@ function calculateHours() {
             if (sleeperStart < start || sleeperEnd > end) {
                 allWarnings.push({
                     title: `Sleepover Period Warning - Shift ${i + 1}`,
-                    message: `Sleepover period (${sleeperStartTime} - ${sleeperEndTime}) extends outside shift bounds. Please check your times.`
+                    message: `Sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Please check your times.`
                 });
                 // Reset to standard calculation
                 actualWorkHours = shiftHours;
