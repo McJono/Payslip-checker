@@ -1839,16 +1839,16 @@ function calculateHours() {
             }
             
             // Check if shift ends within night shift timeframe
-            // Use < for start boundary to avoid overlap with afternoon shift end
+            // Use >= for start boundary to include exact boundary times (end boundary already uses <=)
             let endsInNightShift = false;
             if (nightStartHour > nightEndHour) {
                 // Night shift wraps around midnight
                 endsInNightShift = (endHour > nightStartHour || endHour < nightEndHour || 
-                              (endHour === nightStartHour && endMinute > nightStartMin) ||
+                              (endHour === nightStartHour && endMinute >= nightStartMin) ||
                               (endHour === nightEndHour && endMinute <= nightEndMin));
             } else {
                 // Night shift doesn't wrap
-                endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute > nightStartMin)) &&
+                endsInNightShift = ((endHour > nightStartHour || (endHour === nightStartHour && endMinute >= nightStartMin)) &&
                               (endHour < nightEndHour || (endHour === nightEndHour && endMinute <= nightEndMin)));
             }
             
