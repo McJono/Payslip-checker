@@ -364,7 +364,8 @@ function saveShiftData() {
             startTime: document.getElementById(`shiftStartTime-${shiftIndex}`)?.value || '',
             endDate: document.getElementById(`shiftEndDate-${shiftIndex}`)?.value || '',
             endTime: document.getElementById(`shiftEndTime-${shiftIndex}`)?.value || '',
-            isSleepover: document.getElementById(`isSleepover-${shiftIndex}`)?.value || 'false'
+            isSleepover: document.getElementById(`isSleepover-${shiftIndex}`)?.value || 'false',
+            hasSleeperAgreement: document.getElementById(`sleeperAgreement-${shiftIndex}-checkbox`)?.checked || false
         };
         shifts.push(shift);
     });
@@ -381,6 +382,8 @@ function loadShiftData() {
     const saved = localStorage.getItem('shiftData');
     if (saved) {
         try {
+            isLoadingShiftData = true; // Disable auto-save during load
+            
             const data = JSON.parse(saved);
             if (document.getElementById('hoursAward')) {
                 document.getElementById('hoursAward').value = data.hoursAward || '';
@@ -405,25 +408,28 @@ function loadShiftData() {
                         if (document.getElementById('shiftEndDate-0')) document.getElementById('shiftEndDate-0').value = shift.endDate || '';
                         if (document.getElementById('shiftEndTime-0')) document.getElementById('shiftEndTime-0').value = shift.endTime || '';
                         if (document.getElementById('isSleepover-0')) document.getElementById('isSleepover-0').value = shift.isSleepover || 'false';
+                        if (document.getElementById('sleeperAgreement-0-checkbox')) document.getElementById('sleeperAgreement-0-checkbox').checked = shift.hasSleeperAgreement || false;
                     }
                     
-                    // Add additional shifts
+                    // Add additional shifts (skip auto-save during loading)
                     for (let i = 1; i < data.shifts.length; i++) {
-                        addShift();
+                        const createdShiftIndex = addShift(true); // skipAutoSave = true
                         const shift = data.shifts[i];
-                        const idx = i;
-                        setTimeout(() => {
-                            if (document.getElementById(`shiftStartDate-${idx}`)) document.getElementById(`shiftStartDate-${idx}`).value = shift.startDate || '';
-                            if (document.getElementById(`shiftStartTime-${idx}`)) document.getElementById(`shiftStartTime-${idx}`).value = shift.startTime || '';
-                            if (document.getElementById(`shiftEndDate-${idx}`)) document.getElementById(`shiftEndDate-${idx}`).value = shift.endDate || '';
-                            if (document.getElementById(`shiftEndTime-${idx}`)) document.getElementById(`shiftEndTime-${idx}`).value = shift.endTime || '';
-                            if (document.getElementById(`isSleepover-${idx}`)) document.getElementById(`isSleepover-${idx}`).value = shift.isSleepover || 'false';
-                        }, 100);
+                        
+                        // Set values immediately since addShift returns synchronously
+                        if (document.getElementById(`shiftStartDate-${createdShiftIndex}`)) document.getElementById(`shiftStartDate-${createdShiftIndex}`).value = shift.startDate || '';
+                        if (document.getElementById(`shiftStartTime-${createdShiftIndex}`)) document.getElementById(`shiftStartTime-${createdShiftIndex}`).value = shift.startTime || '';
+                        if (document.getElementById(`shiftEndDate-${createdShiftIndex}`)) document.getElementById(`shiftEndDate-${createdShiftIndex}`).value = shift.endDate || '';
+                        if (document.getElementById(`shiftEndTime-${createdShiftIndex}`)) document.getElementById(`shiftEndTime-${createdShiftIndex}`).value = shift.endTime || '';
+                        if (document.getElementById(`isSleepover-${createdShiftIndex}`)) document.getElementById(`isSleepover-${createdShiftIndex}`).value = shift.isSleepover || 'false';
+                        if (document.getElementById(`sleeperAgreement-${createdShiftIndex}-checkbox`)) document.getElementById(`sleeperAgreement-${createdShiftIndex}-checkbox`).checked = shift.hasSleeperAgreement || false;
                     }
                 }
             }
         } catch (error) {
             console.error('Error loading shift data:', error);
+        } finally {
+            isLoadingShiftData = false; // Always re-enable auto-save
         }
     }
 }
@@ -468,6 +474,38 @@ function setupAutoSave() {
             saveCalculatorData();
             saveShiftData();
         });
+    });
+    
+    // Auto-save shift data when hours award selection changes
+    const hoursAward = document.getElementById('hoursAward');
+    if (hoursAward) {
+        hoursAward.addEventListener('change', () => {
+            saveShiftData();
+        });
+    }
+    
+    // Auto-save shift data when any shift field changes
+    setupShiftAutoSave();
+}
+
+// Setup auto-save listeners for all shift input fields
+function setupShiftAutoSave() {
+    const shiftsContainer = document.getElementById('shiftsContainer');
+    if (!shiftsContainer) return;
+    
+    // Use event delegation for all shift inputs (handles dynamically added shifts)
+    shiftsContainer.addEventListener('change', (event) => {
+        // Don't auto-save if we're currently loading data
+        if (isLoadingShiftData) return;
+        
+        if (event.target.classList.contains('shift-start-date') ||
+            event.target.classList.contains('shift-start-time') ||
+            event.target.classList.contains('shift-end-date') ||
+            event.target.classList.contains('shift-end-time') ||
+            event.target.classList.contains('shift-sleepover') ||
+            event.target.classList.contains('sleepover-agreement-checkbox')) {
+            saveShiftData();
+        }
     });
 }
 
@@ -1585,8 +1623,9 @@ function updateSleeperAgreementVisibility() {
 
 // Shift management
 let shiftCount = 1;
+let isLoadingShiftData = false; // Flag to prevent auto-save during data loading
 
-function addShift() {
+function addShift(skipAutoSave = false) {
     const container = document.getElementById('shiftsContainer');
     const shiftIndex = shiftCount;
     
@@ -1639,6 +1678,13 @@ function addShift() {
     
     // Update sleepover agreement visibility for new shift
     updateSleeperAgreementVisibility();
+    
+    // Save shift data after adding new shift (unless we're loading data)
+    if (!skipAutoSave && !isLoadingShiftData) {
+        saveShiftData();
+    }
+    
+    return shiftIndex; // Return the shift index for setting values
 }
 
 function removeShift(shiftIndex) {
@@ -1646,6 +1692,10 @@ function removeShift(shiftIndex) {
     if (shiftDiv) {
         shiftDiv.remove();
         renumberShifts();
+        // Save shift data after removing shift (unless we're loading data)
+        if (!isLoadingShiftData) {
+            saveShiftData();
+        }
     }
 }
 
