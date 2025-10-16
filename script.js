@@ -1971,6 +1971,7 @@ function calculateHours() {
         
         if (isSleepover) {
             // Use default sleepover hours (22:00-06:00) if not specified
+            // Note: If only one time is specified, that value is used with the default for the other
             const defaultSleeperStart = '22:00';
             const defaultSleeperEnd = '06:00';
             const effectiveSleeperStartTime = sleeperStartTime || defaultSleeperStart;
@@ -2005,6 +2006,7 @@ function calculateHours() {
             
             // Validate that sleepover period is within shift bounds
             if (sleeperStart < start || sleeperEnd > end) {
+                // Consider it "using defaults" only if both times are empty (as per requirement)
                 const usingDefaults = !sleeperStartTime && !sleeperEndTime;
                 const warningMessage = usingDefaults 
                     ? `Default sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Consider specifying custom sleepover times.`
