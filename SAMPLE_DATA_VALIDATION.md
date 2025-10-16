@@ -28,7 +28,7 @@ The following shifts were provided as test data:
 - **Night:** 24.5
 - **Saturday:** 16
 - **Sunday:** 16
-- **Break Shift:** 11
+- **Broken Shift:** 11
 - **Sleepover:** 6
 
 ## Classification Logic
@@ -89,11 +89,11 @@ The calculator uses the following priority order for classifying shifts:
 ## Validation Results
 
 ✅ **Total Hours:** 76.5 (matches expected)
-✅ **Normal Hours:** 9.0 (Shift 6: 11.0 reclassified as broken, Shift 8: 9.0)
+✅ **Normal Hours:** 9.0 (Only Shift 8: 9.0, as Shift 6's 11.0 hours were reclassified as broken)
 ✅ **Night Hours:** 24.5 (Shifts 1, 4, 5, 7 = 8.5 + 0.5 + 7.0 + 8.5)
 ✅ **Saturday Hours:** 16.0 (Shifts 2, 9 = 8.0 + 8.0)
 ✅ **Sunday Hours:** 16.0 (Shifts 3, 10 = 8.0 + 8.0)
-✅ **Broken Shift Hours:** 11.0 (Shift 6: 11.0)
+✅ **Broken Shift Hours:** 11.0 (Shift 6: 11.0, reclassified from normal due to insufficient break)
 ✅ **Sleepover Count:** 6 (Shifts 1, 2, 3, 7, 9, 10)
 
 All calculations match the expected breakdown! ✅
