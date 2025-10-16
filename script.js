@@ -1688,7 +1688,8 @@ function calculateHours() {
     // Calculate totals across all shifts
     let totalHours = 0;
     let totalNormalHours = 0;
-    let totalOvertimeHours = 0;
+    let totalOvertime1Hours = 0;
+    let totalOvertime2Hours = 0;
     let totalBrokenShiftHours = 0;
     let totalSaturdayHours = 0;
     let totalSundayHours = 0;
@@ -1736,7 +1737,8 @@ function calculateHours() {
         
         // Calculate hours breakdown for this shift
         let normalHours = 0;
-        let overtimeHours = 0;
+        let overtime1Hours = 0;
+        let overtime2Hours = 0;
         let saturdayHours = 0;
         let sundayHours = 0;
         let afternoonHours = 0;
@@ -1810,8 +1812,34 @@ function calculateHours() {
             } else {
                 // Normal shift - check for daily overtime
                 const maxDailyHours = award.maxDailyHours || 8;
-                if (shiftHours > maxDailyHours) {
-                    overtimeHours = shiftHours - maxDailyHours;
+                const overtime2Threshold = award.overtime2Hours || 10;
+                
+                // Validate that overtime2Threshold is greater than maxDailyHours
+                // If not, treat all overtime as overtime1
+                if (overtime2Threshold <= maxDailyHours) {
+                    // Invalid configuration - treat all overtime at overtime1 rate
+                    if (shiftHours > maxDailyHours) {
+                        overtime1Hours = shiftHours - maxDailyHours;
+                        normalHours = maxDailyHours;
+                        allWarnings.push({
+                            title: `Daily Overtime Detected - Shift ${i + 1}`,
+                            message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the maximum daily hours (${maxDailyHours} hours).`
+                        });
+                    } else {
+                        normalHours = shiftHours;
+                    }
+                } else if (shiftHours > overtime2Threshold) {
+                    // Shift exceeds overtime2 threshold - split into normal, overtime1, and overtime2
+                    overtime2Hours = shiftHours - overtime2Threshold;
+                    overtime1Hours = overtime2Threshold - maxDailyHours;
+                    normalHours = maxDailyHours;
+                    allWarnings.push({
+                        title: `Daily Overtime 2 Detected - Shift ${i + 1}`,
+                        message: `Shift duration (${shiftHours.toFixed(2)} hours) exceeds the overtime 2 threshold (${overtime2Threshold} hours).`
+                    });
+                } else if (shiftHours > maxDailyHours) {
+                    // Shift exceeds maxDailyHours but not overtime2 threshold
+                    overtime1Hours = shiftHours - maxDailyHours;
                     normalHours = maxDailyHours;
                     allWarnings.push({
                         title: `Daily Overtime Detected - Shift ${i + 1}`,
@@ -1835,12 +1863,29 @@ function calculateHours() {
                 nightShiftHours = Math.max(0, nightShiftHours - sleeperDeduction);
             } else if (afternoonHours > 0) {
                 afternoonHours = Math.max(0, afternoonHours - sleeperDeduction);
-            } else if (overtimeHours > 0) {
-                const remainingAfterOvertime = Math.max(0, overtimeHours - sleeperDeduction);
-                const deductedFromOvertime = overtimeHours - remainingAfterOvertime;
-                overtimeHours = remainingAfterOvertime;
-                if (sleeperDeduction - deductedFromOvertime > 0) {
-                    normalHours = Math.max(0, normalHours - (sleeperDeduction - deductedFromOvertime));
+            } else if (overtime2Hours > 0) {
+                // Deduct from overtime2 first, then overtime1, then normal
+                const remainingAfterOvertime2 = Math.max(0, overtime2Hours - sleeperDeduction);
+                const deductedFromOvertime2 = overtime2Hours - remainingAfterOvertime2;
+                overtime2Hours = remainingAfterOvertime2;
+                let remainingDeduction = sleeperDeduction - deductedFromOvertime2;
+                
+                if (remainingDeduction > 0 && overtime1Hours > 0) {
+                    const remainingAfterOvertime1 = Math.max(0, overtime1Hours - remainingDeduction);
+                    const deductedFromOvertime1 = overtime1Hours - remainingAfterOvertime1;
+                    overtime1Hours = remainingAfterOvertime1;
+                    remainingDeduction -= deductedFromOvertime1;
+                }
+                
+                if (remainingDeduction > 0) {
+                    normalHours = Math.max(0, normalHours - remainingDeduction);
+                }
+            } else if (overtime1Hours > 0) {
+                const remainingAfterOvertime1 = Math.max(0, overtime1Hours - sleeperDeduction);
+                const deductedFromOvertime1 = overtime1Hours - remainingAfterOvertime1;
+                overtime1Hours = remainingAfterOvertime1;
+                if (sleeperDeduction - deductedFromOvertime1 > 0) {
+                    normalHours = Math.max(0, normalHours - (sleeperDeduction - deductedFromOvertime1));
                 }
             } else {
                 normalHours = Math.max(0, normalHours - sleeperDeduction);
@@ -1848,7 +1893,7 @@ function calculateHours() {
         }
         
         // Calculate adjusted total for this shift
-        const adjustedShiftHours = normalHours + overtimeHours + saturdayHours + sundayHours + afternoonHours + nightShiftHours;
+        const adjustedShiftHours = normalHours + overtime1Hours + overtime2Hours + saturdayHours + sundayHours + afternoonHours + nightShiftHours;
         totalHours += adjustedShiftHours;
         
         // Store shift data for break checking
@@ -1860,7 +1905,8 @@ function calculateHours() {
             hasSleeperAgreement: hasSleeperAgreement,
             hours: shiftHours,
             normalHours: normalHours,
-            overtimeHours: overtimeHours,
+            overtime1Hours: overtime1Hours,
+            overtime2Hours: overtime2Hours,
             saturdayHours: saturdayHours,
             sundayHours: sundayHours,
             afternoonHours: afternoonHours,
@@ -1869,7 +1915,8 @@ function calculateHours() {
         
         // Add to totals
         totalNormalHours += normalHours;
-        totalOvertimeHours += overtimeHours;
+        totalOvertime1Hours += overtime1Hours;
+        totalOvertime2Hours += overtime2Hours;
         totalSaturdayHours += saturdayHours;
         totalSundayHours += sundayHours;
         totalAfternoonHours += afternoonHours;
@@ -1882,6 +1929,10 @@ function calculateHours() {
     // Track which shifts are broken shifts and which are consecutive
     const brokenShiftIndices = new Set();
     const consecutiveShiftGroups = [];
+    
+    // Add tolerance for floating point precision and minor time differences
+    // This prevents shifts that are meant to be at threshold from being incorrectly classified
+    const BREAK_TIME_TOLERANCE = 0.05; // 3 minutes tolerance
     
     // Check for broken shifts and consecutive shifts
     if (shifts.length > 1) {
@@ -1907,7 +1958,8 @@ function calculateHours() {
             const consecutiveThreshold = 0.5; // hours
             
             // Check if shifts are directly consecutive (directly after each other)
-            if (breakTime >= 0 && breakTime <= consecutiveThreshold) {
+            // Use tolerance to account for minor timing differences
+            if (breakTime >= 0 && breakTime <= consecutiveThreshold + BREAK_TIME_TOLERANCE) {
                 // These are consecutive shifts - group them together
                 // Find if previous shift is already in a group
                 let groupFound = false;
@@ -1922,8 +1974,9 @@ function calculateHours() {
                     // Create new group with previous and current shift
                     consecutiveShiftGroups.push([i - 1, i]);
                 }
-            } else if (breakTime < minBreak && breakTime >= 0) {
+            } else if (breakTime < minBreak - BREAK_TIME_TOLERANCE && breakTime >= 0) {
                 // This is a broken shift (insufficient break but not consecutive)
+                // Use tolerance to avoid flagging shifts that are at or very close to minimum break
                 // Only mark current shift as broken if previous shift is not already marked as broken
                 // This ensures that only the 2nd shift in a chain of broken shifts is treated as broken
                 if (!brokenShiftIndices.has(i - 1)) {
@@ -1942,13 +1995,14 @@ function calculateHours() {
     brokenShiftIndices.forEach(idx => {
         const shift = shifts[idx];
         totalNormalHours -= shift.normalHours;
-        totalOvertimeHours -= shift.overtimeHours;
+        totalOvertime1Hours -= shift.overtime1Hours;
+        totalOvertime2Hours -= shift.overtime2Hours;
         totalSaturdayHours -= shift.saturdayHours;
         totalSundayHours -= shift.sundayHours;
         totalAfternoonHours -= shift.afternoonHours;
         totalNightShiftHours -= shift.nightShiftHours;
         totalBrokenShiftHours += shift.hours;
-        totalHours -= (shift.normalHours + shift.overtimeHours + shift.saturdayHours + 
+        totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours + shift.saturdayHours +
                        shift.sundayHours + shift.afternoonHours + shift.nightShiftHours);
         totalHours += shift.hours; // Add back the full shift hours to broken shift
     });
@@ -1957,7 +2011,8 @@ function calculateHours() {
     for (const group of consecutiveShiftGroups) {
         // Calculate combined hours for the group
         let combinedNormalHours = 0;
-        let combinedOvertimeHours = 0;
+        let combinedOvertime1Hours = 0;
+        let combinedOvertime2Hours = 0;
         let combinedHours = 0;
         let canCombine = true;
         
@@ -1975,10 +2030,35 @@ function calculateHours() {
         // Only recalculate overtime for normal weekday consecutive shifts without special rates
         if (canCombine) {
             const maxDailyHours = award.maxDailyHours || 8;
+            const overtime2Threshold = award.overtime2Hours || 10;
             
-            // Recalculate overtime for the combined shift
-            if (combinedHours > maxDailyHours) {
-                combinedOvertimeHours = combinedHours - maxDailyHours;
+            // Validate that overtime2Threshold is greater than maxDailyHours
+            // If not, treat all overtime as overtime1
+            if (overtime2Threshold <= maxDailyHours) {
+                // Invalid configuration - treat all overtime at overtime1 rate
+                if (combinedHours > maxDailyHours) {
+                    combinedOvertime1Hours = combinedHours - maxDailyHours;
+                    combinedNormalHours = maxDailyHours;
+                    
+                    allWarnings.push({
+                        title: `Continuing Shift Overtime - Shifts ${group.map(idx => shifts[idx].index + 1).join(', ')}`,
+                        message: `Consecutive shifts treated as continuing shift. Combined duration (${combinedHours.toFixed(2)} hours) exceeds maximum daily hours (${maxDailyHours} hours).`
+                    });
+                } else {
+                    combinedNormalHours = combinedHours;
+                }
+            } else if (combinedHours > overtime2Threshold) {
+                // Combined hours exceed overtime2 threshold
+                combinedOvertime2Hours = combinedHours - overtime2Threshold;
+                combinedOvertime1Hours = overtime2Threshold - maxDailyHours;
+                combinedNormalHours = maxDailyHours;
+                
+                allWarnings.push({
+                    title: `Continuing Shift Overtime 2 - Shifts ${group.map(idx => shifts[idx].index + 1).join(', ')}`,
+                    message: `Consecutive shifts treated as continuing shift. Combined duration (${combinedHours.toFixed(2)} hours) exceeds overtime 2 threshold (${overtime2Threshold} hours).`
+                });
+            } else if (combinedHours > maxDailyHours) {
+                combinedOvertime1Hours = combinedHours - maxDailyHours;
                 combinedNormalHours = maxDailyHours;
                 
                 allWarnings.push({
@@ -1991,17 +2071,20 @@ function calculateHours() {
             
             // Adjust totals by removing individual shift calculations and adding combined
             let originalNormalFromGroup = 0;
-            let originalOvertimeFromGroup = 0;
+            let originalOvertime1FromGroup = 0;
+            let originalOvertime2FromGroup = 0;
             
             for (const idx of group) {
                 const shift = shifts[idx];
                 originalNormalFromGroup += shift.normalHours;
-                originalOvertimeFromGroup += shift.overtimeHours;
+                originalOvertime1FromGroup += shift.overtime1Hours;
+                originalOvertime2FromGroup += shift.overtime2Hours;
             }
             
             // Update totals with the difference
             totalNormalHours = totalNormalHours - originalNormalFromGroup + combinedNormalHours;
-            totalOvertimeHours = totalOvertimeHours - originalOvertimeFromGroup + combinedOvertimeHours;
+            totalOvertime1Hours = totalOvertime1Hours - originalOvertime1FromGroup + combinedOvertime1Hours;
+            totalOvertime2Hours = totalOvertime2Hours - originalOvertime2FromGroup + combinedOvertime2Hours;
         }
     }
     
@@ -2049,7 +2132,7 @@ function calculateHours() {
                                  (totalMealAllowance2Count * (award.mealAllowance1 || 0));
     
     // Display results with allowances
-    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalBrokenShiftHours, 
+    displayHoursResults(totalHours, totalNormalHours, totalOvertime1Hours, totalOvertime2Hours, totalBrokenShiftHours, 
                         totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, 
                         totalMealAllowances, allWarnings);
 }
@@ -2139,10 +2222,11 @@ function calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd) 
 }
 
 // Display hours calculation results
-function displayHoursResults(total, normal, overtime, brokenShift, saturday, sunday, afternoon, nightShift, mealAllowances, warnings) {
+function displayHoursResults(total, normal, overtime1, overtime2, brokenShift, saturday, sunday, afternoon, nightShift, mealAllowances, warnings) {
     document.getElementById('totalHours').textContent = total.toFixed(2) + ' hours';
     document.getElementById('calculatedNormalHours').textContent = normal.toFixed(2) + ' hours';
-    document.getElementById('calculatedOvertimeHours').textContent = overtime.toFixed(2) + ' hours';
+    document.getElementById('calculatedOvertime1Hours').textContent = overtime1.toFixed(2) + ' hours';
+    document.getElementById('calculatedOvertime2Hours').textContent = overtime2.toFixed(2) + ' hours';
     document.getElementById('calculatedBrokenShiftHours').textContent = brokenShift.toFixed(2) + ' hours';
     document.getElementById('calculatedSaturdayHours').textContent = saturday.toFixed(2) + ' hours';
     document.getElementById('calculatedSundayHours').textContent = sunday.toFixed(2) + ' hours';
@@ -2178,7 +2262,8 @@ function displayHoursResults(total, normal, overtime, brokenShift, saturday, sun
 function pushHoursToCalculator() {
     // Get the calculated hours from the display
     const normalHours = parseFloat(document.getElementById('calculatedNormalHours').textContent) || 0;
-    const overtimeHours = parseFloat(document.getElementById('calculatedOvertimeHours').textContent) || 0;
+    const overtime1Hours = parseFloat(document.getElementById('calculatedOvertime1Hours').textContent) || 0;
+    const overtime2Hours = parseFloat(document.getElementById('calculatedOvertime2Hours').textContent) || 0;
     const brokenShiftHours = parseFloat(document.getElementById('calculatedBrokenShiftHours').textContent) || 0;
     const saturdayHours = parseFloat(document.getElementById('calculatedSaturdayHours').textContent) || 0;
     const sundayHours = parseFloat(document.getElementById('calculatedSundayHours').textContent) || 0;
@@ -2193,8 +2278,10 @@ function pushHoursToCalculator() {
     const hoursAwardId = document.getElementById('hoursAward').value;
     
     // Set values in Pay Calculator
+    // Combine both overtime hours into single overtime field for now (Pay Calculator doesn't support split overtime yet)
+    const totalOvertimeHours = overtime1Hours + overtime2Hours;
     if (document.getElementById('normalHours')) document.getElementById('normalHours').value = normalHours.toFixed(2);
-    if (document.getElementById('overtimeHours')) document.getElementById('overtimeHours').value = overtimeHours.toFixed(2);
+    if (document.getElementById('overtimeHours')) document.getElementById('overtimeHours').value = totalOvertimeHours.toFixed(2);
     if (document.getElementById('saturdayHours')) document.getElementById('saturdayHours').value = saturdayHours.toFixed(2);
     if (document.getElementById('sundayHours')) document.getElementById('sundayHours').value = sundayHours.toFixed(2);
     if (document.getElementById('afternoonHours')) document.getElementById('afternoonHours').value = afternoonHours.toFixed(2);
