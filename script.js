@@ -1684,11 +1684,11 @@ function addShift(skipAutoSave = false) {
         <div class="form-group sleepover-details-section" id="sleeperDetails-${shiftIndex}" style="display: none;">
             <label for="sleeperStartTime-${shiftIndex}">Sleepover Start Time (optional):</label>
             <input type="time" id="sleeperStartTime-${shiftIndex}" class="form-control sleepover-start-time">
-            <small class="info-text">Leave empty if sleepover starts at shift end time</small>
+            <small class="info-text">Leave empty to use default sleepover hours (22:00-06:00)</small>
             
             <label for="sleeperEndTime-${shiftIndex}" style="margin-top: 10px;">Sleepover End Time (optional):</label>
             <input type="time" id="sleeperEndTime-${shiftIndex}" class="form-control sleepover-end-time">
-            <small class="info-text">Leave empty for standard 8-hour sleepover period</small>
+            <small class="info-text">Leave empty to use default sleepover hours (22:00-06:00)</small>
         </div>
 
         <div class="form-group sleepover-agreement-section" id="sleeperAgreement-${shiftIndex}" style="display: none;">
@@ -1965,14 +1965,21 @@ function calculateHours() {
         // NOTE: Sleepover shifts may have work time before and after the sleepover period
         // If sleepover start/end times are specified, calculate working hours accordingly
         // Working hours = (sleepover start - shift start) + (shift end - sleepover end)
-        // Otherwise, working hours = shift duration (sleepover is after shift end)
+        // If sleepover is selected but no times specified, presume 22:00-06:00 (default sleepover hours)
         let actualWorkHours = shiftHours;
         let sleeperPeriodHours = 0;
         
-        if (isSleepover && sleeperStartTime && sleeperEndTime) {
+        if (isSleepover) {
+            // Use default sleepover hours (22:00-06:00) if not specified
+            // Note: If only one time is specified, that value is used with the default for the other
+            const defaultSleeperStart = '22:00';
+            const defaultSleeperEnd = '06:00';
+            const effectiveSleeperStartTime = sleeperStartTime || defaultSleeperStart;
+            const effectiveSleeperEndTime = sleeperEndTime || defaultSleeperEnd;
+            
             // Parse sleepover times
-            const [sleeperStartHour, sleeperStartMin] = sleeperStartTime.split(':').map(Number);
-            const [sleeperEndHour, sleeperEndMin] = sleeperEndTime.split(':').map(Number);
+            const [sleeperStartHour, sleeperStartMin] = effectiveSleeperStartTime.split(':').map(Number);
+            const [sleeperEndHour, sleeperEndMin] = effectiveSleeperEndTime.split(':').map(Number);
             
             // Create date objects for sleepover period
             const sleeperStart = new Date(start);
@@ -1999,9 +2006,15 @@ function calculateHours() {
             
             // Validate that sleepover period is within shift bounds
             if (sleeperStart < start || sleeperEnd > end) {
+                // Consider it "using defaults" only if both times are empty (as per requirement)
+                const usingDefaults = !sleeperStartTime && !sleeperEndTime;
+                const warningMessage = usingDefaults 
+                    ? `Default sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Consider specifying custom sleepover times.`
+                    : `Sleepover period (${effectiveSleeperStartTime} - ${effectiveSleeperEndTime}) extends outside shift bounds. Please check your times.`;
+                
                 allWarnings.push({
                     title: `Sleepover Period Warning - Shift ${i + 1}`,
-                    message: `Sleepover period (${sleeperStartTime} - ${sleeperEndTime}) extends outside shift bounds. Please check your times.`
+                    message: warningMessage
                 });
                 // Reset to standard calculation
                 actualWorkHours = shiftHours;
