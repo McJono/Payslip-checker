@@ -79,7 +79,7 @@ The Hours Calculator helps you track actual hours worked across multiple shifts 
 
 **Important Notes:**
 - **Sleepover Shifts with Work Before and After**: You can now specify sleepover periods within a shift. For example, a shift from 17:00 to 09:00 with sleepover from 22:00 to 06:00 will calculate working hours as: pre-sleepover work (17:00-22:00 = 5 hours) + post-sleepover work (06:00-09:00 = 3 hours) = 8 total working hours.
-- **Broken Shifts**: Previously, weekend and night shifts maintained their classification even with insufficient break times. Now, shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts, **regardless of whether they are weekend or night shifts**.
+- **Broken Shifts**: Only normal weekday shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts. Weekend (Saturday/Sunday) and night shifts maintain their original classification even with insufficient breaks.
 - **Break Time Tolerance**: An exact 8-hour break (when allowed with agreement) is acceptable and won't be flagged as insufficient.
 - **Night Shift Classification**: For sleepover shifts with work after the sleepover, the end of the entire shift (including post-sleepover work) is used to determine if it qualifies as a night shift.
 
@@ -275,7 +275,7 @@ Works on all modern browsers:
 - Data is stored locally in your browser and is not sent to any server
 - Saturday and Sunday rates are now separate to accommodate different penalty rates for each day
 - **Sleepover Shifts**: Now supports sleepover shifts with work time before and after the sleepover period (e.g., 17:00-22:00 work, 22:00-06:00 sleepover, 06:00-09:00 work)
-- **Broken Shifts**: Weekend and night shifts with insufficient break times are now correctly classified as broken shifts (previously they maintained their original classification)
+- **Broken Shifts**: Only normal weekday shifts with insufficient break times are classified as broken shifts. Weekend (Saturday/Sunday) and night shifts maintain their original classification even with insufficient breaks.
 - **Break Times**: The minimum break time is 10 hours normally, or 8 hours if a sleepover agreement is in place. An exact 8-hour break is acceptable and won't be flagged as insufficient.
 
 ## License

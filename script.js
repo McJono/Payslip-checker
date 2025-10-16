@@ -1947,16 +1947,18 @@ function calculateHours() {
             
             // Check if shift ends within afternoon shift timeframe
             // Priority: Check afternoon shift BEFORE night shift to handle overlapping boundaries correctly
+            // However, if afternoon end equals night start (e.g., both at 22:00), exclude the boundary from afternoon
             let endsInAfternoonShift = false;
             if (afternoonStartHour > afternoonEndHour) {
                 // Afternoon shift wraps around midnight
                 endsInAfternoonShift = (classificationEndHour > afternoonStartHour || classificationEndHour < afternoonEndHour || 
                               (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin) ||
-                              (classificationEndHour === afternoonEndHour && classificationEndMinute <= afternoonEndMin));
+                              (classificationEndHour === afternoonEndHour && classificationEndMinute < afternoonEndMin));
             } else {
                 // Afternoon shift doesn't wrap
+                // Exclude end boundary if it matches night shift start (22:00 should be night, not afternoon)
                 endsInAfternoonShift = ((classificationEndHour > afternoonStartHour || (classificationEndHour === afternoonStartHour && classificationEndMinute >= afternoonStartMin)) &&
-                              (classificationEndHour < afternoonEndHour || (classificationEndHour === afternoonEndHour && classificationEndMinute <= afternoonEndMin)));
+                              (classificationEndHour < afternoonEndHour || (classificationEndHour === afternoonEndHour && classificationEndMinute < afternoonEndMin)));
             }
             
             // Check if shift ends within night shift timeframe
@@ -1974,11 +1976,10 @@ function calculateHours() {
                               (classificationEndHour < nightEndHour || (classificationEndHour === nightEndHour && classificationEndMinute <= nightEndMin)));
             }
             
-            // Determine shift rate based on end time - check afternoon FIRST
-            if (endsInAfternoonShift) {
-                // Entire shift is paid at afternoon shift rate
-                afternoonHours = actualWorkHours;
-            } else if (endsInNightShift) {
+            // Determine shift rate based on end time
+            // Priority: Night shift classification only (not afternoon)
+            // Night shift applies to shifts ending >= 22:00 or < 7:00
+            if (endsInNightShift) {
                 // Entire shift is paid at night shift rate
                 nightShiftHours = actualWorkHours;
             } else {
@@ -2124,21 +2125,24 @@ function calculateHours() {
     
     // Subtract broken shift hours from all categories and add to broken shift total
     // Issue #2: If a shift is treated as a broken shift, don't count those hours towards anything else
-    // Weekend and night shifts with insufficient breaks should also be reclassified as broken shifts
+    // Weekend and night shifts maintain their classification even with insufficient breaks
+    // Only normal weekday shifts are reclassified as broken shifts
     brokenShiftIndices.forEach(idx => {
         const shift = shifts[idx];
-        // Reclassify all broken shifts regardless of their original category
-        // This includes weekend and night shifts with insufficient break times
+        // Only reclassify normal weekday shifts as broken shifts
+        // Weekend and night shifts maintain their original classification
+        if (shift.saturdayHours > 0 || shift.sundayHours > 0 || shift.nightShiftHours > 0 || shift.afternoonHours > 0) {
+            // This is a weekend, night, or afternoon shift - keep original classification
+            // Do not reclassify as broken shift
+            return;
+        }
+        
+        // This is a normal weekday shift with insufficient break - reclassify as broken
         totalNormalHours -= shift.normalHours;
         totalOvertime1Hours -= shift.overtime1Hours;
         totalOvertime2Hours -= shift.overtime2Hours;
-        totalSaturdayHours -= shift.saturdayHours;
-        totalSundayHours -= shift.sundayHours;
-        totalAfternoonHours -= shift.afternoonHours;
-        totalNightShiftHours -= shift.nightShiftHours;
         totalBrokenShiftHours += shift.hours;
-        totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours + 
-                      shift.saturdayHours + shift.sundayHours + shift.afternoonHours + shift.nightShiftHours);
+        totalHours -= (shift.normalHours + shift.overtime1Hours + shift.overtime2Hours);
         totalHours += shift.hours; // Add back the full shift hours to broken shift
     });
     
