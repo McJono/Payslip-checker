@@ -1085,12 +1085,13 @@ function renderAwardsList() {
         // Handle backward compatibility
         const saturdayRate = award.saturdayRate !== undefined ? award.saturdayRate : award.weekendRate || 1.5;
         const sundayRate = award.sundayRate !== undefined ? award.sundayRate : award.weekendRate || 2.0;
+        const afternoonShiftRate = award.afternoonShiftRate || 1.15;
         
         return `
         <div class="award-item">
             <div class="award-info">
                 <h4>${award.name}</h4>
-                <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} (after ${award.maxDailyHours}h) | Overtime 2: x${award.overtime2Rate || 2.0} (after ${award.overtime2Hours || 10}h) | Saturday: x${saturdayRate} | Sunday: x${sundayRate} | Night: x${award.nightShiftRate}</p>
+                <p>Normal: x${award.normalRate} | Overtime: x${award.overtimeRate} (after ${award.maxDailyHours}h) | Overtime 2: x${award.overtime2Rate || 2.0} (after ${award.overtime2Hours || 10}h) | Saturday: x${saturdayRate} | Sunday: x${sundayRate} | Afternoon: x${afternoonShiftRate} | Night: x${award.nightShiftRate}</p>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="editAward(${award.id})" class="btn btn-secondary">Edit</button>
@@ -1875,11 +1876,15 @@ function calculateHours() {
         totalNightShiftHours += nightShiftHours;
     }
     
-    // Check for broken shifts (shifts that don't have adequate break between them)
+    // Sort shifts by start time for processing consecutive shifts
+    shifts.sort((a, b) => a.start - b.start);
+    
+    // Track which shifts are broken shifts and which are consecutive
+    const brokenShiftIndices = new Set();
+    const consecutiveShiftGroups = [];
+    
+    // Check for broken shifts and consecutive shifts
     if (shifts.length > 1) {
-        // Sort shifts by start time
-        shifts.sort((a, b) => a.start - b.start);
-        
         for (let i = 1; i < shifts.length; i++) {
             const prevShift = shifts[i - 1];
             const currentShift = shifts[i];
@@ -1898,59 +1903,143 @@ function calculateHours() {
                 }
             }
             
-            // Check if break is insufficient
-            if (breakTime < minBreak && breakTime >= 0) {
-                // This is a broken shift - mark current shift hours as broken shift hours
+            // Define what "directly after" means - very small break (e.g., 0.5 hour or less)
+            const consecutiveThreshold = 0.5; // hours
+            
+            // Check if shifts are directly consecutive (directly after each other)
+            if (breakTime >= 0 && breakTime <= consecutiveThreshold) {
+                // These are consecutive shifts - group them together
+                // Find if previous shift is already in a group
+                let groupFound = false;
+                for (const group of consecutiveShiftGroups) {
+                    if (group.includes(i - 1)) {
+                        group.push(i);
+                        groupFound = true;
+                        break;
+                    }
+                }
+                if (!groupFound) {
+                    // Create new group with previous and current shift
+                    consecutiveShiftGroups.push([i - 1, i]);
+                }
+            } else if (breakTime < minBreak && breakTime >= 0) {
+                // This is a broken shift (insufficient break but not consecutive)
+                brokenShiftIndices.add(i);
                 allWarnings.push({
                     title: `Broken Shift Detected - Shift ${currentShift.index + 1}`,
                     message: `Only ${breakTime.toFixed(2)} hours break after previous shift (minimum: ${minBreak} hours). This shift may qualify for broken shift penalties.`
                 });
-                
-                // Track broken shift hours (informational only - not added to total since hours are already counted in other categories)
-                // This tracks which shifts violate the minimum break requirement
-                totalBrokenShiftHours += currentShift.hours;
             }
         }
     }
     
-    // Check for meal allowances (based on consecutive shifts)
-    // Meal allowance is based on having a shift and then a second shift straight after
+    // Subtract broken shift hours from all categories and add to broken shift total
+    // Issue #2: If a shift is treated as a broken shift, don't count those hours towards anything else
+    brokenShiftIndices.forEach(idx => {
+        const shift = shifts[idx];
+        totalNormalHours -= shift.normalHours;
+        totalOvertimeHours -= shift.overtimeHours;
+        totalSaturdayHours -= shift.saturdayHours;
+        totalSundayHours -= shift.sundayHours;
+        totalAfternoonHours -= shift.afternoonHours;
+        totalNightShiftHours -= shift.nightShiftHours;
+        totalBrokenShiftHours += shift.hours;
+        totalHours -= (shift.normalHours + shift.overtimeHours + shift.saturdayHours + 
+                       shift.sundayHours + shift.afternoonHours + shift.nightShiftHours);
+        totalHours += shift.hours; // Add back the full shift hours to broken shift
+    });
+    
+    // Issue #3: Process consecutive shift groups for combined overtime calculation
+    for (const group of consecutiveShiftGroups) {
+        // Calculate combined hours for the group
+        let combinedNormalHours = 0;
+        let combinedOvertimeHours = 0;
+        let combinedHours = 0;
+        let isWeekday = true;
+        
+        for (const idx of group) {
+            const shift = shifts[idx];
+            combinedHours += shift.hours;
+            // Check if any shift in group is on weekend
+            if (shift.saturdayHours > 0 || shift.sundayHours > 0) {
+                isWeekday = false;
+            }
+        }
+        
+        // Only recalculate overtime for weekday consecutive shifts
+        if (isWeekday) {
+            const maxDailyHours = award.maxDailyHours || 8;
+            
+            // Recalculate overtime for the combined shift
+            if (combinedHours > maxDailyHours) {
+                combinedOvertimeHours = combinedHours - maxDailyHours;
+                combinedNormalHours = maxDailyHours;
+                
+                allWarnings.push({
+                    title: `Continuing Shift Overtime - Shifts ${group.map(idx => shifts[idx].index + 1).join(', ')}`,
+                    message: `Consecutive shifts treated as continuing shift. Combined duration (${combinedHours.toFixed(2)} hours) exceeds maximum daily hours (${maxDailyHours} hours).`
+                });
+            } else {
+                combinedNormalHours = combinedHours;
+            }
+            
+            // Adjust totals by removing individual shift calculations and adding combined
+            let originalNormalFromGroup = 0;
+            let originalOvertimeFromGroup = 0;
+            
+            for (const idx of group) {
+                const shift = shifts[idx];
+                originalNormalFromGroup += shift.normalHours;
+                originalOvertimeFromGroup += shift.overtimeHours;
+            }
+            
+            // Update totals with the difference
+            totalNormalHours = totalNormalHours - originalNormalFromGroup + combinedNormalHours;
+            totalOvertimeHours = totalOvertimeHours - originalOvertimeFromGroup + combinedOvertimeHours;
+        }
+    }
+    
+    // Issue #4: Calculate meal allowances automatically for consecutive shifts
+    let totalMealAllowance1Count = 0;
+    let totalMealAllowance2Count = 0;
+    
     if (shifts.length > 1 && award.mealAllowance1 && award.mealAllowance1 > 0) {
-        // Shifts are already sorted by start time from broken shift check
-        for (let i = 1; i < shifts.length; i++) {
-            const prevShift = shifts[i - 1];
-            const currentShift = shifts[i];
+        // Process each consecutive shift group
+        for (const group of consecutiveShiftGroups) {
+            // Calculate combined hours for meal allowance eligibility
+            let combinedHours = 0;
+            for (const idx of group) {
+                combinedHours += shifts[idx].hours;
+            }
             
-            // Calculate break between shifts (in hours)
-            const breakTime = (currentShift.start - prevShift.end) / (1000 * 60 * 60);
+            // Check for meal allowance based on combined duration
+            if (combinedHours >= (award.mealAllowance1Hours || 5)) {
+                totalMealAllowance1Count++;
+                allWarnings.push({
+                    title: `Meal Allowance Eligible - Shifts ${group.map(idx => shifts[idx].index + 1).join(', ')}`,
+                    message: `Consecutive shifts treated as continuing shift. Combined duration (${combinedHours.toFixed(2)} hours) qualifies for meal allowance ($${award.mealAllowance1.toFixed(2)}).`
+                });
+            }
             
-            // Define what "straight after" means - using a small threshold (e.g., 1 hour or less)
-            // This ensures shifts that are truly consecutive qualify for meal allowance
-            const consecutiveThreshold = 1; // hours
-            
-            // Check if this is a consecutive shift (straight after the previous one)
-            if (breakTime >= 0 && breakTime <= consecutiveThreshold) {
-                // Check for meal allowance based on the second shift's duration
-                if (currentShift.hours >= (award.mealAllowance1Hours || 5)) {
-                    allWarnings.push({
-                        title: `Meal Allowance Eligible - Shift ${currentShift.index + 1}`,
-                        message: `Consecutive shifts detected (${breakTime.toFixed(2)} hours break). Second shift duration (${currentShift.hours.toFixed(2)} hours) qualifies for meal allowance ($${award.mealAllowance1.toFixed(2)}).`
-                    });
-                }
-                
-                // Check for second meal allowance based on the second shift's duration
-                if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0 && currentShift.hours >= award.mealAllowance2Hours) {
-                    allWarnings.push({
-                        title: `2nd Meal Allowance Eligible - Shift ${currentShift.index + 1}`,
-                        message: `Consecutive shifts detected (${breakTime.toFixed(2)} hours break). Second shift duration (${currentShift.hours.toFixed(2)} hours) qualifies for 2nd meal allowance ($${award.mealAllowance1.toFixed(2)}).`
-                    });
-                }
+            // Check for second meal allowance
+            if (award.mealAllowance2Hours && award.mealAllowance2Hours > 0 && combinedHours >= award.mealAllowance2Hours) {
+                totalMealAllowance2Count++;
+                allWarnings.push({
+                    title: `2nd Meal Allowance Eligible - Shifts ${group.map(idx => shifts[idx].index + 1).join(', ')}`,
+                    message: `Consecutive shifts treated as continuing shift. Combined duration (${combinedHours.toFixed(2)} hours) qualifies for 2nd meal allowance ($${award.mealAllowance1.toFixed(2)}).`
+                });
             }
         }
     }
     
-    // Display results
-    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalBrokenShiftHours, totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, allWarnings);
+    // Calculate total meal allowances
+    const totalMealAllowances = (totalMealAllowance1Count * (award.mealAllowance1 || 0)) + 
+                                 (totalMealAllowance2Count * (award.mealAllowance1 || 0));
+    
+    // Display results with allowances
+    displayHoursResults(totalHours, totalNormalHours, totalOvertimeHours, totalBrokenShiftHours, 
+                        totalSaturdayHours, totalSundayHours, totalAfternoonHours, totalNightShiftHours, 
+                        totalMealAllowances, allWarnings);
 }
 
 // Helper function to calculate night shift hours
@@ -2038,7 +2127,7 @@ function calculateAfternoonShiftHours(start, end, afternoonStart, afternoonEnd) 
 }
 
 // Display hours calculation results
-function displayHoursResults(total, normal, overtime, brokenShift, saturday, sunday, afternoon, nightShift, warnings) {
+function displayHoursResults(total, normal, overtime, brokenShift, saturday, sunday, afternoon, nightShift, mealAllowances, warnings) {
     document.getElementById('totalHours').textContent = total.toFixed(2) + ' hours';
     document.getElementById('calculatedNormalHours').textContent = normal.toFixed(2) + ' hours';
     document.getElementById('calculatedOvertimeHours').textContent = overtime.toFixed(2) + ' hours';
@@ -2047,6 +2136,12 @@ function displayHoursResults(total, normal, overtime, brokenShift, saturday, sun
     document.getElementById('calculatedSundayHours').textContent = sunday.toFixed(2) + ' hours';
     document.getElementById('calculatedAfternoonHours').textContent = afternoon.toFixed(2) + ' hours';
     document.getElementById('calculatedNightShiftHours').textContent = nightShift.toFixed(2) + ' hours';
+    
+    // Display meal allowances if present
+    const mealAllowanceElement = document.getElementById('calculatedMealAllowances');
+    if (mealAllowanceElement) {
+        mealAllowanceElement.textContent = formatCurrency(mealAllowances || 0);
+    }
     
     // Display warnings
     const warningsContainer = document.getElementById('overtimeWarnings');
@@ -2078,6 +2173,10 @@ function pushHoursToCalculator() {
     const afternoonHours = parseFloat(document.getElementById('calculatedAfternoonHours').textContent) || 0;
     const nightShiftHours = parseFloat(document.getElementById('calculatedNightShiftHours').textContent) || 0;
     
+    // Get meal allowances from display (extract number from currency format)
+    const mealAllowanceText = document.getElementById('calculatedMealAllowances')?.textContent || '$0.00';
+    const mealAllowances = parseFloat(mealAllowanceText.replace(/[$,]/g, '')) || 0;
+    
     // Get the award from Hours Calculator
     const hoursAwardId = document.getElementById('hoursAward').value;
     
@@ -2089,10 +2188,20 @@ function pushHoursToCalculator() {
     if (document.getElementById('afternoonHours')) document.getElementById('afternoonHours').value = afternoonHours.toFixed(2);
     if (document.getElementById('nightShiftHours')) document.getElementById('nightShiftHours').value = nightShiftHours.toFixed(2);
     
+    // Add meal allowances to manual allowances field
+    if (document.getElementById('manualAllowances')) {
+        const currentAllowances = parseFloat(document.getElementById('manualAllowances').value) || 0;
+        document.getElementById('manualAllowances').value = (currentAllowances + mealAllowances).toFixed(2);
+    }
+    
     // Add note about broken shifts to manual allowances field if any broken shifts detected
     let allowanceNote = '';
     if (brokenShiftHours > 0) {
         allowanceNote += `Broken shift detected: ${brokenShiftHours.toFixed(2)} hours qualify for broken shift allowances. `;
+    }
+    
+    if (mealAllowances > 0) {
+        allowanceNote += `Meal allowances of $${mealAllowances.toFixed(2)} have been added to manual allowances. `;
     }
     
     // Add note about any warnings to user
