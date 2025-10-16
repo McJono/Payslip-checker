@@ -78,8 +78,8 @@ The Hours Calculator helps you track actual hours worked across multiple shifts 
 - **Meal Allowances**: Automatically calculated for consecutive shifts
 
 **Important Notes:**
-- **Sleepover Shifts with Work Before and After**: You can now specify sleepover periods within a shift. For example, a shift from 17:00 to 09:00 with sleepover from 22:00 to 06:00 will calculate working hours as (22:00-17:00) + (09:00-06:00) = 8 hours.
-- **Broken Shifts**: Shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts, **including weekend and night shifts**.
+- **Sleepover Shifts with Work Before and After**: You can now specify sleepover periods within a shift. For example, a shift from 17:00 to 09:00 with sleepover from 22:00 to 06:00 will calculate working hours as: pre-sleepover work (17:00-22:00 = 5 hours) + post-sleepover work (06:00-09:00 = 3 hours) = 8 total working hours.
+- **Broken Shifts**: Previously, weekend and night shifts maintained their classification even with insufficient break times. Now, shifts with less than the minimum break time (10 hours normally, or 8 hours with sleepover agreement) are classified as broken shifts, **regardless of whether they are weekend or night shifts**.
 - **Break Time Tolerance**: An exact 8-hour break (when allowed with agreement) is acceptable and won't be flagged as insufficient.
 - **Night Shift Classification**: For sleepover shifts with work after the sleepover, the end of the entire shift (including post-sleepover work) is used to determine if it qualifies as a night shift.
 
